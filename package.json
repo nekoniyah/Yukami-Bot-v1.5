@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.2.1",
+    "sequelize": "^6.37.7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.20"
+  }
+}
