@@ -4,8 +4,8 @@ import {
     User,
     PartialUser,
 } from "discord.js";
-import eventBuilder from "../eventBuilder";
-import { ReactionRole } from "../models";
+import eventBuilder from "../utils/eventBuilder";
+import { ReactionRole } from "../utils/models";
 
 function getEmojiIdentifier(
     reaction: MessageReaction | PartialMessageReaction

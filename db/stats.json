@@ -1,0 +1,158 @@
+{
+    "faunid": {
+        "vitality": {
+            "base": 14,
+            "perLevel": 2
+        },
+        "attack": {
+            "base": 4,
+            "perLevel": 1
+        },
+        "defense": {
+            "base": 4,
+            "perLevel": 1.5
+        },
+        "dexterity": {
+            "base": 2,
+            "perLevel": 1
+        },
+        "agility": {
+            "base": 6,
+            "perLevel": 2
+        },
+        "mana": {
+            "base": 15,
+            "perLevel": 3
+        }
+    },
+    "human": {
+        "vitality": {
+            "base": 12,
+            "perLevel": 1
+        },
+        "attack": {
+            "base": 3,
+            "perLevel": 1
+        },
+        "defense": {
+            "base": 2,
+            "perLevel": 1
+        },
+        "dexterity": {
+            "base": 2,
+            "perLevel": 0.5
+        },
+        "agility": {
+            "base": 5,
+            "perLevel": 1
+        },
+        "mana": {
+            "base": 5,
+            "perLevel": 2
+        }
+    },
+    "dragon": {
+        "vitality": {
+            "base": 30,
+            "perLevel": 4
+        },
+        "attack": {
+            "base": 5,
+            "perLevel": 1
+        },
+        "defense": {
+            "base": 7,
+            "perLevel": 1.5
+        },
+        "dexterity": {
+            "base": 1,
+            "perLevel": 1
+        },
+        "agility": {
+            "base": 2,
+            "perLevel": 1.5
+        },
+        "mana": {
+            "base": 20,
+            "perLevel": 4
+        }
+    },
+    "elf": {
+        "vitality": {
+            "base": 18,
+            "perLevel": 3
+        },
+        "attack": {
+            "base": 2,
+            "perLevel": 1
+        },
+        "defense": {
+            "base": 3,
+            "perLevel": 1
+        },
+        "dexterity": {
+            "base": 1,
+            "perLevel": 1.5
+        },
+        "agility": {
+            "base": 5,
+            "perLevel": 1
+        },
+        "mana": {
+            "base": 25,
+            "perLevel": 5
+        }
+    },
+    "angel": {
+        "vitality": {
+            "base": 50,
+            "perLevel": 5
+        },
+        "attack": {
+            "base": 3,
+            "perLevel": 2
+        },
+        "defense": {
+            "base": 0,
+            "perLevel": 0.2
+        },
+        "dexterity": {
+            "base": 3,
+            "perLevel": 1
+        },
+        "agility": {
+            "base": 9,
+            "perLevel": 1
+        },
+        "mana": {
+            "base": 25,
+            "perLevel": 7
+        }
+    },
+    "felinid": {
+        "vitality": {
+            "base": "stats.mana <= (stats.mana_max / 2) ? 16 : -1",
+            "perLevel": "stats.mana <= (stats.mana_max / 2) ? 2 : -1"
+        },
+        "attack": {
+            "base": 4,
+            "perLevel": 1
+        },
+        "defense": {
+            "base": 0,
+            "perLevel": 0
+        },
+        "dexterity": {
+            "base": 2,
+            "perLevel": 1
+        },
+        "agility": {
+            "base": 6,
+            "perLevel": 2
+        },
+        "mana": {
+            "base": 30,
+            "perLevel": 7
+        }
+    }
+}

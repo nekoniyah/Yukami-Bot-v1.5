@@ -1,5 +1,5 @@
 import { REST, Routes } from "discord.js";
-import eventBuilder from "../eventBuilder";
+import eventBuilder from "../utils/eventBuilder";
 import "dotenv/config";
 import fs from "fs";
 import path from "path";

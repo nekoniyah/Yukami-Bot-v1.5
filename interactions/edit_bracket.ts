@@ -1,5 +1,5 @@
 import { ButtonInteraction, EmbedBuilder } from "discord.js";
-import { Avatar } from "../models";
+import { Avatar } from "../utils/models";
 
 export default async function (
     interaction: ButtonInteraction,

@@ -1,6 +1,6 @@
 import { TextChannel } from "discord.js";
-import { Avatar } from "../models";
-import eventBuilder from "../eventBuilder";
+import { Avatar } from "../utils/models";
+import eventBuilder from "../utils/eventBuilder";
 
 async function webhookManager(channel: TextChannel) {
     const webhooks = await channel.fetchWebhooks();

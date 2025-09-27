@@ -1,5 +1,13 @@
-import { ButtonInteraction, EmbedBuilder, TextChannel } from "discord.js";
-import { Avatar } from "../models";
+import {
+    ActionRowBuilder,
+    ButtonInteraction,
+    ComponentType,
+    EmbedBuilder,
+    StringSelectMenuBuilder,
+    TextChannel,
+} from "discord.js";
+import { Avatar } from "../utils/models";
+import displays from "../db/displays.json";
 
 export default async function createAvatar(interaction: ButtonInteraction) {
     let embed = new EmbedBuilder()
@@ -46,7 +54,7 @@ export default async function createAvatar(interaction: ButtonInteraction) {
 
         interaction.editReply({ embeds: [embed] });
 
-        const bracketFilter = (response) => {
+        const bracketFilter = (response: any) => {
             return response.author.id === interaction.user.id;
         };
 
@@ -97,17 +105,55 @@ export default async function createAvatar(interaction: ButtonInteraction) {
                         )}`
                     );
 
-                let avatar = await Avatar.create({
-                    userId: interaction.user.id,
-                    name: avatarName,
-                    bracket: bracket,
-                    icon: iconUrl,
+                const speciesSelectMenu = new StringSelectMenuBuilder({
+                    placeholder: "Select a species",
+                    customId: "speciesSelect",
+                    options: Object.keys(displays).map((key) => ({
+                        // @ts-ignore
+                        label: displays[key],
+                        value: key,
+                    })),
                 });
 
-                await avatar.save();
+                embed.setDescription(
+                    "Please select a species for " + avatarName
+                );
 
-                interaction.editReply({ embeds: [embed] });
-                await response.delete();
+                const msg = await interaction.editReply({
+                    embeds: [embed],
+                    components: [
+                        new ActionRowBuilder()
+                            .addComponents(speciesSelectMenu)
+                            .toJSON(),
+                    ],
+                });
+
+                msg.awaitMessageComponent({
+                    componentType: ComponentType.StringSelect,
+                    filter: (interaction) => {
+                        return (
+                            interaction.customId === "speciesSelect" &&
+                            interaction.user.id === interaction.user.id
+                        );
+                    },
+                    time: 60000,
+                }).then(async (interaction) => {
+                    const selectedSpecies = interaction.values[0];
+
+                    let avatar = await Avatar.create({
+                        userId: interaction.user.id,
+                        name: avatarName,
+                        bracket: bracket,
+                        icon: iconUrl,
+                        species: selectedSpecies,
+                        level: 1,
+                    });
+
+                    await avatar.save();
+
+                    interaction.editReply({ embeds: [embed] });
+                    await response.delete();
+                });
             });
         });
 

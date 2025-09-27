@@ -49,6 +49,7 @@ export const ReactionRoleModel = db.makeModel(ReactionRole, {
 });
 
 export class Avatar extends Model {}
+
 export const AvatarModel = db.makeModel(Avatar, {
     id: {
         type: DataTypes.INTEGER,
@@ -73,10 +74,17 @@ export const AvatarModel = db.makeModel(Avatar, {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    species: {
+        type: DataTypes.STRING,
+        allowNull: false, // e.g., "faunid", "human", "dragon", etc.
+    },
+    level: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
 });
-
-export class UseLevel extends Model {}
-export const UseLevelModel = db.makeModel(UseLevel, {
+export class UserLevel extends Model {}
+export const UserLevelModel = db.makeModel(UserLevel, {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -90,6 +98,22 @@ export const UseLevelModel = db.makeModel(UseLevel, {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
+});
+
+export class Quest extends Model {}
+export const QuestModel = db.makeModel(Quest, {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    name: { type: DataTypes.STRING, allowNull: false },
+    description: { type: DataTypes.TEXT },
+    rewardXp: { type: DataTypes.INTEGER, defaultValue: 0 },
+    rewardItems: { type: DataTypes.JSON, defaultValue: [] },
+});
+
+export class CharacterQuest extends Model {}
+export const CharacterQuestModel = db.makeModel(CharacterQuest, {
+    characterId: { type: DataTypes.INTEGER, allowNull: false },
+    questId: { type: DataTypes.INTEGER, allowNull: false },
+    status: { type: DataTypes.STRING, defaultValue: "active" }, // active|completed|failed
 });
 
 await db.init();

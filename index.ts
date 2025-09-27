@@ -1,7 +1,7 @@
 import { Client, Partials } from "discord.js";
 import fs from "fs";
 import path from "path";
-import "./db";
+import "./utils/db";
 import "dotenv/config";
 
 const eventPath = path.join(__dirname, "events");

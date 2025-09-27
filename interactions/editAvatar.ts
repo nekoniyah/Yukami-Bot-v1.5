@@ -5,7 +5,7 @@ import {
     ButtonStyle,
     EmbedBuilder,
 } from "discord.js";
-import { Avatar } from "../models";
+import { Avatar } from "../utils/models";
 import locale from "../locales/locale";
 
 export default async function (interaction: ButtonInteraction) {

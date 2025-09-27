@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, MessageMentions } from "discord.js";
-import { Welcome } from "../models";
+import { Welcome } from "../utils/models";
 
 export default async function (interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) return;

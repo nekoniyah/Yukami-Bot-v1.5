@@ -1,6 +1,6 @@
 import { userMention } from "discord.js";
-import { Welcome } from "../models";
-import eventBuilder from "../eventBuilder";
+import { Welcome } from "../utils/models";
+import eventBuilder from "../utils/eventBuilder";
 
 export default eventBuilder<"guildMemberAdd">(async (member) => {
     const welcome = await Welcome.findOne({

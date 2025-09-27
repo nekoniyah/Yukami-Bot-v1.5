@@ -10,8 +10,9 @@ import {
     StringSelectMenuBuilder,
 } from "discord.js";
 import path from "path";
-import { Avatar } from "../models";
+import { Avatar } from "../utils/models";
 import locale from "../locales/locale";
+import { renderComponentToPng } from "../utils/render";
 
 export default async function (
     interaction: ChatInputCommandInteraction | ButtonInteraction
@@ -19,6 +20,17 @@ export default async function (
     let res = await Avatar.findAll({ where: { userId: interaction.user.id } });
 
     const loc = await locale(interaction.locale ?? "en");
+
+    let charaReact = await renderComponentToPng("Characters", {
+        characters: res.map((a) => ({
+            name: a.get("name"),
+            avatarUrl: a.get("icon"),
+            species: a.get("species"),
+            level: a.get("level"),
+        })),
+    });
+
+    let buffer = await charaReact.arrayBuffer();
 
     const mainEmbed = new EmbedBuilder()
         .setTitle(loc.ui.avatars.title)
@@ -34,10 +46,11 @@ export default async function (
             text: process.env.NAME ?? "Luo",
             iconURL: interaction.client.user?.displayAvatarURL(),
         })
-        .setImage("attachment://banner-avatars.png");
+        .setImage("attachment://characters.png");
 
     if (res.length === 0) {
         mainEmbed.setDescription(loc.ui.avatars.no_avatars);
+        mainEmbed.setImage(null);
     }
 
     const createAvatarButton = new ButtonBuilder({
@@ -57,31 +70,45 @@ export default async function (
         });
     }
 
-    const components = [
-        new ActionRowBuilder().addComponents(avatarSelectMenu).toJSON(),
-        new ActionRowBuilder().addComponents(createAvatarButton).toJSON(),
-    ];
-
-    if (res.length === 0) {
-        components.slice(0, 1);
-    }
+    const components =
+        avatarSelectMenu.options.length > 0
+            ? [
+                  new ActionRowBuilder()
+                      .addComponents(avatarSelectMenu)
+                      .toJSON(),
+                  new ActionRowBuilder()
+                      .addComponents(createAvatarButton)
+                      .toJSON(),
+              ]
+            : [
+                  new ActionRowBuilder()
+                      .addComponents(createAvatarButton)
+                      .toJSON(),
+              ];
 
     if (interaction instanceof ChatInputCommandInteraction) {
         await interaction.editReply({
             embeds: [mainEmbed],
             components,
-            files: [
-                new AttachmentBuilder(
-                    path.join(__dirname, "..", "assets", "banner-avatars.png"),
-                    { name: "banner-avatars.png" }
-                ),
-            ],
+            files: res.length === 0 ? [] : [Buffer.from(buffer)],
         });
     } else {
+        let charaReact = await renderComponentToPng("Characters", {
+            characters: res.map((a) => ({
+                name: a.get("name"),
+                species: a.get("species"),
+                level: a.get("level"),
+                avatarUrl: a.get("icon"),
+            })),
+        });
+
+        let buffer = await charaReact.arrayBuffer();
+
         let message = await interaction.message.fetch(true);
         await message.edit({
             embeds: [mainEmbed],
             components,
+            files: res.length === 0 ? [] : [Buffer.from(buffer)],
         });
     }
 }

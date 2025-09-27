@@ -6,7 +6,7 @@ import {
     MessageMentions,
     StringSelectMenuBuilder,
 } from "discord.js";
-import { ReactionRole } from "../models";
+import { ReactionRole } from "../utils/models";
 import locale from "../locales/locale";
 
 export default async function rr(interaction: ChatInputCommandInteraction) {

@@ -1,7 +1,7 @@
-import eventBuilder from "../eventBuilder";
+import eventBuilder from "../utils/eventBuilder";
 import path from "path";
 import fs from "fs";
-import { Avatar } from "../models";
+import { Avatar } from "../utils/models";
 import { EmbedBuilder } from "discord.js";
 
 export default eventBuilder<"interactionCreate">(async (interaction) => {
@@ -57,7 +57,7 @@ export default eventBuilder<"interactionCreate">(async (interaction) => {
             .setTimestamp();
 
         if (interaction.isChatInputCommand())
-            interaction.reply({ embeds: [embed] });
+            interaction.editReply({ embeds: [embed] });
         console.error(e);
     }
 });
