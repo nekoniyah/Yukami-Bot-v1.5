@@ -1,26 +1,63 @@
-import path from "path";
 import eventBuilder from "../eventBuilder";
+import path from "path";
 import fs from "fs";
+import { Avatar } from "../models";
+import { EmbedBuilder } from "discord.js";
 
 export default eventBuilder<"interactionCreate">(async (interaction) => {
+    // Handle the interaction
+
     let now = Date.now();
+    let avatars = await Avatar.findAll({
+        where: {
+            userId: interaction.user.id,
+        },
+    });
+    const interactionFolder = fs.readdirSync(
+        path.join(__dirname, "..", "interactions")
+    );
 
-    if (interaction.isCommand()) {
-        const { commandName } = interaction;
-        let interactionFolder = path.join(__dirname, "..", "interactions");
-        let interactionFiles = fs
-            .readdirSync(interactionFolder)
-            .filter((file) => file.endsWith(".ts"));
+    try {
+        if (interaction.isCommand()) {
+            const { commandName } = interaction;
 
-        let cmdFilename = interactionFiles.find(
-            (f) => f === `${commandName}.ts`
-        );
-
-        if (cmdFilename) {
-            let { default: cmd } = await import(
-                path.join(interactionFolder, cmdFilename)
+            const interactionFile = interactionFolder.find(
+                (file) => file === `${commandName}.ts`
             );
-            await cmd(interaction, { now });
+
+            if (interactionFile) {
+                const { default: f } = await import(
+                    `../interactions/${interactionFile}`
+                );
+
+                await interaction.deferReply({
+                    withResponse: false,
+                });
+
+                await f(interaction, now, avatars);
+            }
+        } else if (interaction.isButton() || interaction.isAnySelectMenu()) {
+            const { default: f } = await import(
+                `../interactions/${interaction.customId}.ts`
+            );
+
+            await interaction.deferReply({
+                withResponse: false,
+            });
+
+            await f(interaction, avatars);
         }
+    } catch (e) {
+        let embed = new EmbedBuilder()
+            .setTitle("Error")
+            .setDescription(
+                "An error occured. It might be a bug in the code, please retry later"
+            )
+            .setColor("Red")
+            .setTimestamp();
+
+        if (interaction.isChatInputCommand())
+            interaction.reply({ embeds: [embed] });
+        console.error(e);
     }
 });

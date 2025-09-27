@@ -1,7 +1,8 @@
+import { ChatInputCommandInteraction } from "discord.js";
 import { TypicalInteractionFn } from "../eventBuilder";
 
-const ping: TypicalInteractionFn = async (interaction, { now }) => {
-    await interaction.reply(`:ping_pong: Pong! ${Date.now() - now}ms`);
+const ping = async (interaction: ChatInputCommandInteraction, now: number) => {
+    await interaction.editReply(`:ping_pong: Pong! ${Date.now() - now}ms`);
 };
 
 export default ping;

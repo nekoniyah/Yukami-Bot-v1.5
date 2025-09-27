@@ -1,4 +1,10 @@
-import { Sequelize, Model, ModelStatic, ModelAttributes } from "sequelize";
+import {
+    Sequelize,
+    Model,
+    ModelStatic,
+    ModelAttributes,
+    InitOptions,
+} from "sequelize";
 
 const sequelize = new Sequelize({
     dialect: "sqlite",
@@ -10,10 +16,17 @@ export default {
         await sequelize.sync();
     },
 
-    makeModel<T extends ModelStatic<Model>>(
-        model: T,
-        options: ModelAttributes<InstanceType<T>>
+    makeModel<T extends Model>(
+        model: ModelStatic<T>, // proper "static" model type
+        attributes: ModelAttributes<T, any>, // attributes typed for that model
+        options: Omit<InitOptions<T>, "sequelize" | "modelName"> = {}
     ) {
-        return model.init(options, { sequelize });
+        model.init(attributes, {
+            sequelize,
+            modelName: (model as any).name,
+            ...options,
+        });
+
+        return model as ModelStatic<T>;
     },
 };
