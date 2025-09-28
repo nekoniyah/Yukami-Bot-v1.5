@@ -56,7 +56,7 @@ export default {
             <div
                 style={{
                     width: 420,
-                    height: 280,
+                    height: 300,
                     backgroundColor: isDark ? "#1F2937" : "#FFFFFF",
                     border: `3px solid ${rarityColor}`,
                     borderRadius: 16,
@@ -75,7 +75,7 @@ export default {
                     alignItems: "flex-start",
                     marginBottom: 20
                 }}>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
                         <h1 style={{
                             fontSize: 22,
                             fontWeight: "800",
@@ -87,6 +87,7 @@ export default {
                             {monster.name}
                         </h1>
                         <div style={{
+                            display: "contents",
                             fontSize: 14,
                             color: isDark ? "#9CA3AF" : "#6B7280",
                             marginTop: 4,
@@ -96,7 +97,10 @@ export default {
                         </div>
                     </div>
                     <div style={{
-                        textAlign: "right",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        textAlign: "center",
                         backgroundColor: rarityColor,
                         color: "#FFFFFF",
                         padding: "8px 12px",
@@ -109,7 +113,7 @@ export default {
                 </div>
 
                 {/* HP Section */}
-                <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", flexDirection: "column", marginBottom: 20 }}>
                     <div style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -123,6 +127,7 @@ export default {
                     </div>
                     <div
                         style={{
+                            display: "flex",
                             width: "100%",
                             height: 10,
                             backgroundColor: isDark ? "#374151" : "#E5E7EB",
@@ -132,6 +137,7 @@ export default {
                     >
                         <div
                             style={{
+                                display: "contents",
                                 width: `${Math.max(0, (monster.currentHp / monster.maxHp) * 100)}%`,
                                 height: "100%",
                                 backgroundColor: monster.currentHp > monster.maxHp * 0.6
@@ -146,56 +152,66 @@ export default {
                     </div>
                 </div>
 
-                {/* Stats Grid */}
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(3, 1fr)",
-                        gap: 16,
-                        flex: 1
-                    }}
-                >
-                    <StatItem
-                        label="VIT"
-                        value={monster.stats.vitality}
-                        color="#EF4444"
-                        isDark={isDark}
-                    />
-                    <StatItem
-                        label="ATT"
-                        value={monster.stats.attack}
-                        color="#F59E0B"
-                        isDark={isDark}
-                    />
-                    <StatItem
-                        label="DEF"
-                        value={monster.stats.defense}
-                        color="#10B981"
-                        isDark={isDark}
-                    />
-                    <StatItem
-                        label="DEX"
-                        value={monster.stats.dexterity}
-                        color="#3B82F6"
-                        isDark={isDark}
-                    />
-                    <StatItem
-                        label="AGI"
-                        value={monster.stats.agility}
-                        color="#8B5CF6"
-                        isDark={isDark}
-                    />
-                    <StatItem
-                        label="MANA"
-                        value={monster.stats.mana}
-                        color="#06B6D4"
-                        isDark={isDark}
-                    />
+                {/* Stats - Two rows of three columns */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+                    <div style={{ display: "flex", gap: 16 }}>
+                        <div style={{ display: "flex", flex: 1 }}>
+                            <StatItem
+                                label="VIT"
+                                value={monster.stats.vitality}
+                                color="#EF4444"
+                                isDark={isDark}
+                            />
+                        </div>
+                        <div style={{ display: "flex", flex: 1 }}>
+                            <StatItem
+                                label="ATT"
+                                value={monster.stats.attack}
+                                color="#F59E0B"
+                                isDark={isDark}
+                            />
+                        </div>
+                        <div style={{ display: "flex", flex: 1 }}>
+                            <StatItem
+                                label="DEF"
+                                value={monster.stats.defense}
+                                color="#10B981"
+                                isDark={isDark}
+                            />
+                        </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 16 }}>
+                        <div style={{ display: "flex", flex: 1 }}>
+                            <StatItem
+                                label="DEX"
+                                value={monster.stats.dexterity}
+                                color="#3B82F6"
+                                isDark={isDark}
+                            />
+                        </div>
+                        <div style={{ display: "flex", flex: 1 }}>
+                            <StatItem
+                                label="AGI"
+                                value={monster.stats.agility}
+                                color="#8B5CF6"
+                                isDark={isDark}
+                            />
+                        </div>
+                        <div style={{ display: "flex", flex: 1 }}>
+                            <StatItem
+                                label="MANA"
+                                value={monster.stats.mana}
+                                color="#06B6D4"
+                                isDark={isDark}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         )
-    }, width: 900,
-    height: 400,
+    },
+    width: 420,
+    height: 300,
 }
 
 function StatItem({
@@ -211,13 +227,19 @@ function StatItem({
 }) {
     return (
         <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
             textAlign: "center",
             backgroundColor: isDark ? "#374151" : "#F9FAFB",
             borderRadius: 8,
             padding: "12px 8px",
-            border: `2px solid ${color}20`
+            border: `2px solid ${color}20`,
+            width: "100%"
         }}>
             <div style={{
+                display: "contents",
                 fontSize: 11,
                 fontWeight: "600",
                 color: isDark ? "#9CA3AF" : "#6B7280",
@@ -227,6 +249,7 @@ function StatItem({
                 {label}
             </div>
             <div style={{
+                display: "contents",
                 fontSize: 20,
                 fontWeight: "800",
                 color: color,
