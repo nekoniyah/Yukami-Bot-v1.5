@@ -6,131 +6,131 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![Bun](https://img.shields.io/badge/Runtime-Bun-orange.svg)](https://bun.sh/)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-green.svg)](https://www.sqlite.org/)
+[![React](https://img.shields.io/badge/React-v19.1.1-61DAFB.svg)](https://reactjs.org/)
 
-_A feature-rich Discord bot for roleplay communities with avatar management, leveling, and interactive systems_
+_Un bot Discord riche en fonctionnalités pour le serveur Discord Yukami RP avec gestion d'avatars, système de niveau et interactions dynamiques_
 
 </div>
 
-## 🌟 Features
+## 🌟 Fonctionnalités
 
-### 🎭 Avatar Roleplay System
+### 🎭 Système d'Avatar Roleplay
 
--   **Multiple Characters**: Users can create and manage multiple roleplay avatars
--   **Species System**: 6 different species (Human, Elf, Dragon, Angel, Faunid, Félinade Empyréenne) with unique stat progressions
--   **Dynamic Stats**: Level-based stat calculations for vitality, attack, defense, dexterity, agility, and mana
--   **Visual Character Cards**: Auto-generated character images using React components
--   **Character Management**: Create, edit, delete, and switch between avatars
--   **Bracket System**: Customizable message formatting for roleplay
+-   **Personnages Multiples**: Les utilisateurs peuvent créer et gérer plusieurs avatars de roleplay
+-   **Système d'Espèces**: 6 espèces différentes (Humain, Elfe, Dragon, Ange, Faunid, Félinade Empyréenne) avec progressions de stats uniques
+-   **Stats Dynamiques**: Calculs de stats basés sur le niveau pour vitalité, attaque, défense, dextérité, agilité et mana
+-   **Cartes de Personnage Visuelles**: Images de personnages auto-générées utilisant des composants React
+-   **Gestion de Personnage**: Créer, modifier, supprimer et changer entre les avatars
+-   **Système de Crochets**: Formatage de message personnalisable pour le roleplay avec intégration webhook
+-   **Intégration Webhook**: Changement fluide de personnage avec avatars et noms personnalisés
 
-### 📈 Leveling System
+### 📈 Système de Niveau
 
--   **User Progression**: Experience and level tracking for users
--   **Character Levels**: Individual leveling for each avatar
--   **Quest Integration**: Quest system with progress tracking and rewards
--   **Leaderboards**: Level-based ranking system
+-   **Progression Utilisateur**: Suivi d'expérience et de niveau pour les utilisateurs
+-   **Niveaux de Personnage**: Système de niveau individuel pour chaque avatar
+-   **Intégration Quêtes**: Système de quêtes avec suivi de progression et récompenses
+-   **Classements**: Système de classement basé sur le niveau
 
-### 👋 Welcome & Moderation
+### 👋 Accueil & Modération
 
--   **Custom Welcome Messages**: Configurable welcome messages for new members
--   **Auto-Role Assignment**: Automatic role assignment for users and bots
--   **Guild-Specific Configuration**: Per-server welcome settings
+-   **Messages d'Accueil Personnalisés**: Messages d'accueil configurables pour les nouveaux membres
+-   **Attribution Automatique de Rôles**: Attribution automatique de rôles pour les utilisateurs et bots
+-   **Configuration Spécifique au Serveur**: Paramètres d'accueil par serveur
 
-### ⚡ Reaction Roles
+### ⚡ Rôles par Réaction
 
--   **Interactive Role Management**: Users can assign/remove roles via emoji reactions
--   **Multiple Roles per Emoji**: Support for assigning multiple roles with one reaction
--   **Guild Integration**: Server-specific reaction role configurations
+-   **Gestion Interactive de Rôles**: Les utilisateurs peuvent s'attribuer/retirer des rôles via les réactions emoji
+-   **Plusieurs Rôles par Emoji**: Support pour l'attribution de plusieurs rôles avec une réaction
+-   **Intégration Serveur**: Configurations de rôles par réaction spécifiques au serveur
 
-### 🐉 Monster System (Basic Implementation)
+### 🐉 Système de Rencontre de Monstres (Implémentation Actuelle)
 
--   **Random Encounters**: Monsters spawn during chat activity (5% chance, 5-minute cooldown)
--   **Level-Appropriate**: Monster levels scale with player progression
--   **Visual Monster Cards**: Generated monster images with stats display
--   **Multiple Species**: Beast, Elemental, Dragon, Undead, Demon, Fey monsters
--   **Rarity System**: Common, Uncommon, Rare, Epic, Legendary monsters
+-   **Intégration Canaux Roleplay**: Les monstres apparaissent spécifiquement dans les canaux de roleplay désignés pendant les conversations actives
+-   **Rencontres Déclenchées par Messages**: 20% de chance d'apparition par message avec cooldown de 5 minutes par canal
+-   **Mise à l'Échelle Appropriée au Niveau**: Les niveaux des monstres s'adaptent à la progression des joueurs (variance de ±1 niveau)
+-   **Cartes de Monstre Visuelles**: Images de monstres générées dynamiquement avec affichage des stats
+-   **Espèces Multiples**: Monstres Bête, Élémentaire, Dragon, Mort-vivant, Démon, Fée avec caractéristiques uniques
+-   **Système de Rareté**: Monstres Commun, Peu commun, Rare, Épique, Légendaire avec taux d'apparition différents
+-   **Génération Basée sur Templates**: Templates de monstres pré-conçus avec stats et capacités équilibrées
 
-### 🌐 Internationalization
+### 🎨 Composants Visuels
 
--   **Multi-Language Support**: English, French, German, Spanish, Portuguese
--   **Locale Detection**: Automatic language detection from user settings
--   **Extensible Translation System**: Easy to add new languages
+-   **Rendu Basé React**: Composants React côté serveur pour la génération d'images
+-   **Galeries de Personnages**: Affichage visuel de plusieurs personnages
+-   **Cartes de Monstre**: Cartes d'information détaillées des monstres avec stats et capacités
 
-### 🎨 Visual Components
+## 🛠️ Stack Technique
 
--   **React-Based Rendering**: Server-side React components for image generation
--   **Character Galleries**: Visual display of multiple characters
--   **Monster Cards**: Detailed monster information cards
--   **Theme Support**: Dark/light theme options
--   **Performance Optimized**: Cached rendering with TTL
-
-## 🛠️ Tech Stack
-
--   **Runtime**: Bun (High-performance JavaScript runtime)
+-   **Runtime**: Bun (Runtime JavaScript haute performance)
 -   **Framework**: Discord.js v14
--   **Language**: TypeScript
--   **Database**: SQLite with Sequelize ORM
--   **Image Generation**: @vercel/og + Satori + React
--   **Environment**: dotenv for configuration
+-   **Langage**: TypeScript
+-   **Base de données**: SQLite avec Sequelize ORM
+-   **Génération d'Images**: @vercel/og + Satori + React v19.1.1
+-   **Environnement**: dotenv pour la configuration
 
 ## 📦 Installation
 
-1. **Clone the repository**
+1. **Cloner le dépôt**
 
     ```bash
     git clone https://github.com/nekoniyah/yukami-bot-v1.5.git
     cd yukami-bot-v1.5
     ```
 
-2. **Install dependencies**
+2. **Installer les dépendances**
 
     ```bash
     bun install
     ```
 
-3. **Configure environment**
+3. **Configurer l'environnement**
 
     ```bash
     cp .env.example .env
-    # Edit .env with your Discord bot token and other settings
+    # Éditer .env avec votre token de bot Discord et autres paramètres
     ```
 
-4. **Run the bot**
+4. **Lancer le bot**
     ```bash
     bun start
     ```
 
 ## ⚙️ Configuration
 
-Create a `.env` file with the following variables:
+Créer un fichier `.env` avec les variables suivantes :
 
 ```env
-# Discord Bot Configuration
+# Configuration du Bot Discord
 TOKEN=your_discord_bot_token_here
 NAME=Yukami Bot
 
-# Database Configuration
+# Configuration Base de données
 DATABASE_URL=./db/database.db
 
-# Environment
+# Environnement
 NODE_ENV=production
 
-# Optional: Performance Settings
+# Paramètres de Performance
 CACHE_TTL=300000
 MAX_AVATARS_PER_USER=10
+
+# Paramètres Système de Monstres
+MONSTER_SPAWN_CHANCE=20
+MONSTER_SPAWN_COOLDOWN=300000
 ```
 
-## 📁 Project Structure
+## 📁 Structure du Projet
 
 ```
 yukami-bot-v1.5/
-├── components/          # React components for image generation
+├── components/          # Composants React pour génération d'images
 │   ├── CharacterCard.tsx
 │   ├── Characters.tsx
 │   └── MonsterCard.tsx
-├── db/                  # Database configuration and data
-│   ├── displays.json    # Species display names
-│   └── stats.json       # Species stat configurations
-├── events/              # Discord event handlers
+├── db/                  # Configuration base de données et données
+│   ├── displays.json    # Noms d'affichage des espèces
+│   └── stats.json       # Configurations stats des espèces
+├── events/              # Gestionnaires d'événements Discord
 │   ├── clientReady.ts
 │   ├── guildMemberAdd.ts
 │   ├── interactionCreate.ts
@@ -138,234 +138,103 @@ yukami-bot-v1.5/
 │   ├── messageReactionAdd.ts
 │   ├── messageReactionRemove.ts
 │   └── monsterSpawn.ts
-├── interactions/        # Slash command and button handlers
+├── interactions/        # Gestionnaires de commandes slash et boutons
 │   ├── avatar.ts
 │   ├── createAvatar.ts
 │   ├── editAvatar.ts
 │   ├── welcome.ts
 │   └── rr.ts
-├── locales/            # Internationalization files
-│   ├── en.json
-│   ├── fr.json
-│   ├── de.json
-│   ├── es.json
-│   ├── pt.json
-│   └── locale.ts
-├── registers/          # Command registration
-├── utils/              # Utility functions
+├── locales/            # Fichiers d'internationalisation
+│   └── fr.json         # Traductions françaises
+├── registers/          # Enregistrement des commandes
+├── utils/              # Fonctions utilitaires
 │   ├── db.ts
 │   ├── models.ts
-│   ├── monsters.ts
+│   ├── monsters.ts     # Système de génération de monstres
 │   └── render.tsx
-└── index.ts            # Main bot entry point
+└── index.ts            # Point d'entrée principal du bot
 ```
 
-## 🚀 Commands
+## 🚀 Commandes
 
--   `/avatar` - Manage your roleplay avatars
--   `/welcome` - Configure welcome messages (Admin)
--   `/rr` - Setup reaction roles (Admin)
--   `/ping` - Check bot latency
+-   `/avatar` - Gérer vos avatars de roleplay
+-   `/welcome` - Configurer les messages d'accueil (Admin)
+-   `/rr` - Configurer les rôles par réaction (Admin)
+-   `/ping` - Vérifier la latence du bot
 
-## 📋 TODO List
+## 📋 TODO - Système de Rencontre de Monstres
 
-### 🔥 High Priority Features
+### 🐉 Système de Monstres Amélioré
 
-#### 🐉 Enhanced Monster System
+#### 🎲 Génération Aléatoire de Monstres
 
--   [ ] **Automatic Monster Spawning System** (not message-triggered)
-    -   [ ] Time-based spawning with configurable intervals
-    -   [ ] Location-based spawning (different channels = different biomes)
-    -   [ ] Weather/time of day effects on spawn rates
-    -   [ ] Boss monster events
+-   [ ] **Génération Procédurale Complète**
 
-#### ⚔️ Combat Systems
+    -   [ ] **Noms Aléatoires**: Système de génération de noms avec combinaisons préfixe + suffixe
 
--   [ ] **PvE Fight System**
+        -   [ ] Base de données de préfixes par espèce (ex: "Sombre", "Ancien", "Féroce")
+        -   [ ] Base de données de suffixes par espèce (ex: "griffe", "croc", "ombre")
+        -   [ ] Noms uniques avec variations culturelles par biome
 
-    -   [ ] Turn-based combat mechanics
-    -   [ ] Skill/ability usage during fights
-    -   [ ] Damage calculations based on character stats
-    -   [ ] Status effects and buffs/debuffs
-    -   [ ] Combat animations and visual feedback
-    -   [ ] Loot drops and experience rewards
+    -   [ ] **Stats Aléatoires**: Distribution dynamique des statistiques
+        -   [ ] Formules mathématiques basées sur espèce + rareté + niveau
+        -   [ ] Variation aléatoire de ±10-15% pour l'unicité
+        -   [ ] Stats spécialisées selon l'espèce (Dragons = plus d'attaque, Élémentaires = plus de mana)
+        -   [ ] Bonus de stats selon la rareté (Légendaire = +50% stats de base)
 
--   [ ] **PvP Fight System**
-    -   [ ] Player vs Player combat mechanics
-    -   [ ] Tournament system
-    -   [ ] Ranking and matchmaking
-    -   [ ] Spectator mode for fights
-    -   [ ] PvP seasons and rewards
+#### ⏰ Système d'Apparition Automatique
 
-#### 🤖 NPC & AI System
+-   [ ] **Apparition Basée sur le Temps**
+    -   [ ] Remplacement complet du système déclenché par messages
+    -   [ ] Intervalles d'apparition configurables par canal (ex: toutes les 2-4 heures)
+    -   [ ] Système d'événements spéciaux avec taux d'apparition augmentés
+    -   [ ] Apparitions nocturnes avec monstres différents (plus dangereux)
+-   [ ] **Événements Boss Programmés**
+    -   [ ] Boss monstres avec annonces serveur-wide
+    -   [ ] Calendrier d'événements hebdomadaires/mensuels
+    -   [ ] Récompenses spéciales pour les événements boss
+    -   [ ] Système de participation de groupe pour les boss
 
--   [ ] **NPC System with AI**
-    -   [ ] AI-powered NPCs using language models
-    -   [ ] Dynamic dialogue generation
-    -   [ ] NPC shops and trading
-    -   [ ] Quest-giving NPCs
-    -   [ ] Personality-based AI responses
-    -   [ ] NPC relationship system
+#### ⚙️ Configuration Administrative
 
-### 🎒 Economy & Items
+-   [ ] **Outils de Configuration**
+    -   [ ] Commandes admin pour configurer les taux d'apparition par canal
+    -   [ ] Interface pour définir les biomes et leurs monstres
+    -   [ ] Système de whitelist/blacklist d'espèces par canal
+    -   [ ] Configuration des événements spéciaux
+-   [ ] **Statistiques et Monitoring**
+    -   [ ] Logs d'apparition de monstres
+    -   [ ] Statistiques de rencontres par canal/joueur
+    -   [ ] Monitoring de la santé de l'écosystème
+    -   [ ] Alertes pour les déséquilibres de population
 
-#### 📦 Inventory System
+---
 
--   [ ] **Player Inventory Management**
-    -   [ ] Item storage and organization
-    -   [ ] Equipment slots (weapons, armor, accessories)
-    -   [ ] Item stacking and durability
-    -   [ ] Inventory UI with pagination
-    -   [ ] Item tooltips with detailed stats
+_Plus de fonctionnalités seront ajoutées au TODO selon les besoins du serveur_
 
-#### 🗡️ Objects & Equipment
+## 🤝 Contribution
 
--   [ ] **Item System**
-    -   [ ] Weapons (swords, bows, staffs, etc.)
-    -   [ ] Armor sets with set bonuses
-    -   [ ] Consumables (potions, food, scrolls)
-    -   [ ] Crafting materials and recipes
-    -   [ ] Rare and legendary items
-    -   [ ] Item enhancement/upgrading system
+1. Fork le dépôt
+2. Créer une branche de fonctionnalité (`git checkout -b feature/fonctionnalite-geniale`)
+3. Commit les changements (`git commit -m 'Ajouter une fonctionnalité géniale'`)
+4. Push sur la branche (`git push origin feature/fonctionnalite-geniale`)
+5. Ouvrir une Pull Request
 
-#### 💰 Currency System
+## 📝 Licence
 
--   [ ] **Multi-Currency Economy**
-    -   [ ] Gold (primary currency)
-    -   [ ] Premium currency (gems/tokens)
-    -   [ ] Guild currency for guild features
-    -   [ ] Activity-based currency rewards
-    -   [ ] Currency exchange system
-
-### 💼 Progression Systems
-
-#### 🏢 Job System
-
--   [ ] **Character Professions**
-    -   [ ] Multiple job classes (Warrior, Mage, Rogue, etc.)
-    -   [ ] Job-specific skills and abilities
-    -   [ ] Job advancement and specialization
-    -   [ ] Crafting professions (Blacksmith, Alchemist)
-    -   [ ] Job-based quests and rewards
-
-#### 📈 Advanced Leveling
-
--   [ ] **Roleplay-Based Progression**
-    -   [ ] Experience based on roleplay activity quality
-    -   [ ] AI analysis of roleplay messages
-    -   [ ] Story participation bonuses
-    -   [ ] Character development tracking
-    -   [ ] Milestone achievements
-
-### 🌍 World & Social Features
-
-#### 🏰 Guild System
-
--   [ ] **Player Guilds**
-    -   [ ] Guild creation and management
-    -   [ ] Guild halls and upgrades
-    -   [ ] Guild vs Guild combat
-    -   [ ] Guild quests and events
-    -   [ ] Guild banking system
-
-#### 🗺️ World Map System
-
--   [ ] **Interactive World**
-    -   [ ] Multiple regions and biomes
-    -   [ ] Fast travel system
-    -   [ ] Location-based events
-    -   [ ] Weather and day/night cycles
-    -   [ ] Region-specific monsters and NPCs
-
-#### 📜 Quest Expansion
-
--   [ ] **Advanced Quest System**
-    -   [ ] Multi-part storyline quests
-    -   [ ] Daily and weekly quests
-    -   [ ] Guild quests
-    -   [ ] Dynamic event quests
-    -   [ ] Quest chains with branching storylines
-
-### 🎯 Quality of Life Improvements
-
-#### 📊 Statistics & Analytics
-
--   [ ] **Detailed Statistics**
-    -   [ ] Combat statistics tracking
-    -   [ ] Roleplay activity metrics
-    -   [ ] Achievement system
-    -   [ ] Progress visualizations
-    -   [ ] Leaderboards for various categories
-
-#### 🔧 Administration Tools
-
--   [ ] **Enhanced Admin Features**
-    -   [ ] Advanced moderation commands
-    -   [ ] Server statistics dashboard
-    -   [ ] Custom event creation tools
-    -   [ ] Player management interface
-    -   [ ] Automated moderation features
-
-#### 🎨 UI/UX Enhancements
-
--   [ ] **Improved User Experience**
-    -   [ ] Interactive menus with buttons
-    -   [ ] Better error handling and user feedback
-    -   [ ] Tutorial system for new users
-    -   [ ] Customizable user preferences
-    -   [ ] Mobile-friendly command interfaces
-
-### 🔮 Advanced Features
-
-#### 🧙‍♂️ Magic System
-
--   [ ] **Spell Casting System**
-    -   [ ] Spell learning and progression
-    -   [ ] Mana-based spell casting
-    -   [ ] Elemental magic types
-    -   [ ] Spell combinations and synergies
-    -   [ ] Magical item enchanting
-
-#### 🏠 Housing System
-
--   [ ] **Player Housing**
-    -   [ ] Personal player homes
-    -   [ ] Furniture and decoration system
-    -   [ ] Storage expansion through housing
-    -   [ ] Player home visiting
-    -   [ ] Home-based crafting stations
-
-#### 🎭 Roleplay Enhancements
-
--   [ ] **Advanced Roleplay Tools**
-    -   [ ] Story mode with GM controls
-    -   [ ] Dice rolling system
-    -   [ ] Character background generator
-    -   [ ] Relationship tracking between characters
-    -   [ ] Roleplay session logging
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+Ce projet est sous licence MIT - voir le fichier LICENSE pour plus de détails.
 
 ## 🆘 Support
 
-If you need help or have questions:
+Si vous avez besoin d'aide ou avez des questions :
 
--   Open an issue on GitHub
--   Join our Discord server (link to be added)
--   Check the documentation (coming soon)
+-   🐛 [Signaler des bugs sur GitHub](https://github.com/nekoniyah/yukami-bot-v1.5/issues)
+-   💬 Contactez directement les développeurs sur le serveur Discord
 
 ---
 
 <div align="center">
-Made with ❤️ by nekoniyah and contributors
+
+**✨ Créé avec ❤️ par nekoniyah et contributeurs ✨**
+
 </div>
