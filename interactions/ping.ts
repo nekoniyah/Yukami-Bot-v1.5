@@ -1,18 +1,29 @@
 import { ChatInputCommandInteraction } from "discord.js";
-import { renderComponentToPng } from "../utils/render";
+import { createPingEmbed } from "../utils/embeds";
 
 const ping = async (interaction: ChatInputCommandInteraction, now: number) => {
-    await interaction.editReply(`:ping_pong: Pong! ${Date.now() - now}ms`);
+    const botLatency = Date.now() - now;
+    const apiLatency = interaction.client.ws.ping;
 
-    // let img = await renderComponentToPng("PrettyProfileCard", {
-    //     username: interaction.user.username,
-    //     avatarUrl: interaction.user.displayAvatarURL({ extension: "png" }),
-    //     tagline: "Pong! " + (Date.now() - now) + "ms",
-    // });
+    const pingEmbed = createPingEmbed(botLatency, apiLatency).addFormattedField(
+        "Uptime",
+        formatUptime(interaction.client.uptime || 0),
+        true
+    );
 
-    // let buffer = await img.arrayBuffer();
-
-    // await interaction.editReply({ files: [Buffer.from(buffer)] });
+    await interaction.editReply({ embeds: [pingEmbed] });
 };
+
+function formatUptime(uptime: number): string {
+    const days = Math.floor(uptime / (24 * 60 * 60 * 1000));
+    const hours = Math.floor(
+        (uptime % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)
+    );
+    const minutes = Math.floor((uptime % (60 * 60 * 1000)) / (60 * 1000));
+
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+}
 
 export default ping;

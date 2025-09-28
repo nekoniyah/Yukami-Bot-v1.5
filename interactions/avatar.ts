@@ -4,13 +4,18 @@ import {
     ButtonInteraction,
     ButtonStyle,
     ChatInputCommandInteraction,
-    EmbedBuilder,
     StringSelectMenuBuilder,
-    ComponentType,
 } from "discord.js";
 import { Avatar } from "../utils/models";
 import locale from "../locales/locale";
 import { renderComponentToPng } from "../utils/render";
+import {
+    YukamiEmbed,
+    createErrorEmbed,
+    createLoadingEmbed,
+    EMBED_EMOJIS,
+    validateEmbed,
+} from "../utils/embeds";
 
 // Cache for avatar data to reduce database queries
 const avatarCache = new Map<string, { data: Avatar[]; expires: number }>();
@@ -46,7 +51,7 @@ export function clearAvatarCache(userId: string): void {
 }
 
 /**
- * Enhanced avatar management interface
+ * Enhanced avatar management interface using new embed utility
  */
 export default async function avatarCommand(
     interaction: ChatInputCommandInteraction | ButtonInteraction
@@ -54,22 +59,27 @@ export default async function avatarCommand(
     try {
         const startTime = Date.now();
         const loc = await locale(interaction.locale ?? "en");
+
+        // Show loading message for better UX
+        const loadingEmbed = createLoadingEmbed("Loading your avatars");
+
+        if (interaction instanceof ChatInputCommandInteraction) {
+            await interaction.editReply({ embeds: [loadingEmbed] });
+        } else {
+            await interaction.update({ embeds: [loadingEmbed] });
+        }
+
         const avatars = await getUserAvatars(interaction.user.id);
 
-        // Create main embed with enhanced styling
-        const mainEmbed = new EmbedBuilder()
-            .setTitle(`🎭 ${loc.ui.avatars.title}`)
-            .setColor("#5865F2")
-            .setAuthor({
-                name: interaction.user.tag,
-                iconURL: interaction.user.displayAvatarURL({ size: 128 }),
-            })
+        // Create main embed with new utility
+        const mainEmbed = new YukamiEmbed()
+            .setTitle(`${EMBED_EMOJIS.AVATAR} ${loc.ui.avatars.title}`)
+            .setUserAuthor(
+                interaction.user,
+                `${interaction.user.displayName}'s Avatars`
+            )
             .setThumbnail(interaction.user.displayAvatarURL({ size: 256 }))
-            .setTimestamp()
-            .setFooter({
-                text: `${process.env.NAME ?? "Yukami Bot"} • Avatar System`,
-                iconURL: interaction.client.user?.displayAvatarURL(),
-            });
+            .setBotFooter("Avatar Management System");
 
         let imageBuffer: Buffer | null = null;
 
@@ -82,39 +92,44 @@ export default async function avatarCommand(
             const highestLevel = Math.max(
                 ...avatars.map((avatar) => avatar.get("level") as number)
             );
+            const averageLevel = Math.round(totalLevels / avatars.length);
 
             mainEmbed
                 .setDescription(
                     `You have **${avatars.length}** avatar${
                         avatars.length !== 1 ? "s" : ""
                     }\n` +
-                        `📊 Total Levels: **${totalLevels}** | Highest Level: **${highestLevel}**\n\n` +
                         `Select an avatar to edit, or create a new one below.`
                 )
-                .addFields([
-                    {
-                        name: "📈 Quick Stats",
-                        value:
-                            avatars
-                                .slice(0, 3)
-                                .map(
-                                    (avatar) =>
-                                        `• **${avatar.get(
-                                            "name"
-                                        )}** - Level ${avatar.get("level")}`
-                                )
-                                .join("\n") +
-                            (avatars.length > 3
-                                ? `\n... and ${avatars.length - 3} more`
-                                : ""),
-                        inline: true,
-                    },
-                    {
-                        name: "🎮 Actions Available",
-                        value: "• Edit existing avatars\n• Create new avatars\n• Delete unwanted avatars\n• View detailed stats",
-                        inline: true,
-                    },
-                ]);
+                .addFormattedField(
+                    "📊 Collection Stats",
+                    `**Total Levels:** ${totalLevels}\n**Highest Level:** ${highestLevel}\n**Average Level:** ${averageLevel}`,
+                    true
+                )
+                .addFormattedField(
+                    "🎮 Quick Actions",
+                    "• Edit existing avatars\n• Create new avatars\n• Delete unwanted avatars\n• View detailed stats",
+                    true
+                );
+
+            // Add top avatars field
+            const topAvatars =
+                avatars
+                    .slice(0, 3)
+                    .map(
+                        (avatar) =>
+                            `${getSpeciesEmoji(
+                                avatar.get("species") as string
+                            )} **${avatar.get("name")}** - Level ${avatar.get(
+                                "level"
+                            )}`
+                    )
+                    .join("\n") +
+                (avatars.length > 3
+                    ? `\n... and ${avatars.length - 3} more`
+                    : "");
+
+            mainEmbed.addFormattedField("🌟 Your Avatars", topAvatars);
 
             // Render character image with performance optimization
             try {
@@ -127,7 +142,7 @@ export default async function avatarCommand(
                             species: avatar.get("species") as string,
                             level: avatar.get("level") as number,
                         })),
-                        theme: "dark", // Add theme support
+                        theme: "dark",
                         layout: avatars.length > 4 ? "grid" : "vertical",
                     }
                 );
@@ -137,27 +152,27 @@ export default async function avatarCommand(
                 mainEmbed.setImage("attachment://avatars.png");
             } catch (renderError) {
                 console.warn("Failed to render character image:", renderError);
-                mainEmbed.addFields([
-                    {
-                        name: "⚠️ Notice",
-                        value: "Character preview unavailable",
-                        inline: false,
-                    },
-                ]);
+                mainEmbed.addFormattedField(
+                    "⚠️ Notice",
+                    "Character preview temporarily unavailable"
+                );
             }
         } else {
             mainEmbed
+                .asInfo()
                 .setDescription(
                     loc.ui.avatars.no_avatars +
                         "\n\n🚀 **Get started by creating your first avatar!**"
                 )
-                .addFields([
-                    {
-                        name: "✨ Why Create Avatars?",
-                        value: "• Roleplay as different characters\n• Level up and gain experience\n• Customize appearance and stats\n• Participate in adventures",
-                        inline: false,
-                    },
-                ]);
+                .addFormattedField(
+                    "✨ Why Create Avatars?",
+                    "• Roleplay as different characters\n• Level up and gain experience\n• Customize appearance and stats\n• Participate in adventures"
+                );
+        }
+
+        // Validate embed before sending
+        if (!validateEmbed(mainEmbed)) {
+            throw new Error("Embed validation failed");
         }
 
         // Enhanced button components
@@ -246,38 +261,26 @@ export default async function avatarCommand(
                 : [],
         };
 
-        if (interaction instanceof ChatInputCommandInteraction) {
-            if (interaction.deferred) {
-                await interaction.editReply(messageOptions);
-            } else {
-                await interaction.reply(messageOptions);
-            }
-        } else {
-            await interaction.update(messageOptions);
-        }
+        await interaction.editReply(messageOptions);
     } catch (error) {
         console.error("Error in avatar command:", error);
 
-        const errorEmbed = new EmbedBuilder()
-            .setTitle("❌ Something went wrong")
-            .setDescription("Failed to load avatars. Please try again.")
-            .setColor("Red")
-            .setTimestamp();
+        const errorEmbed = createErrorEmbed(
+            "Avatar Command Failed",
+            "Failed to load your avatars. Please try again.",
+            process.env.NODE_ENV === "production"
+                ? undefined
+                : (error as Error).message
+        );
 
-        if (interaction instanceof ChatInputCommandInteraction) {
-            if (interaction.deferred) {
-                await interaction.editReply({
-                    embeds: [errorEmbed],
-                    components: [],
-                });
-            } else {
-                await interaction.reply({
-                    embeds: [errorEmbed],
-                    ephemeral: true,
-                });
-            }
-        } else {
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        try {
+            await interaction.editReply({
+                embeds: [errorEmbed],
+                components: [],
+                files: [],
+            });
+        } catch (replyError) {
+            console.error("Failed to send error message:", replyError);
         }
     }
 }
