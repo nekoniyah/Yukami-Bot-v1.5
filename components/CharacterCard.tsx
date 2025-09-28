@@ -1,4 +1,3 @@
-// components/CharacterCard.tsx
 import React from 'react';
 import s from '../db/stats.json';
 import displays from '../db/displays.json';
@@ -56,23 +55,19 @@ export default {
         const currentTheme = themes[theme];
         const speciesDisplay = displays[species as keyof typeof displays] || species;
 
-        // Calculate stat values
         function calculateStat(stat: any) {
             if (typeof stat.base === 'string') {
-                // For dynamic stats like felinid
                 return new Function(`
                     const level = ${level};
-                    const stats = ${JSON.stringify(stats)}; // Mock for calculation
+                    const stats = ${JSON.stringify(stats)};
                     return ${stat.base};
                 `)();
             }
             return Math.floor(stat.base + (stat.perLevel * (level - 1)));
         }
 
-        // Calculate experience percentage
         const expPercentage = (experience / experienceToNext) * 100;
 
-        // Get stat colors
         const getStatColor = (statName: string) => {
             const colors: Record<string, string> = {
                 vitality: '#ef4444',
@@ -104,6 +99,7 @@ export default {
             >
                 {/* Decorative Elements */}
                 <div style={{
+                    display: 'block',
                     position: 'absolute',
                     top: 0,
                     right: 0,
@@ -113,19 +109,21 @@ export default {
                     borderRadius: '50%'
                 }} />
 
-                {/* Avatar Section */}
+                {/* Left Side - Avatar Section */}
                 <div style={{
-                    display: 'contents',
+                    display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    marginRight: 40
+                    marginRight: 40,
+                    width: 260
                 }}>
+                    {/* Avatar Container */}
                     <div style={{
+                        display: 'flex',
                         position: 'relative',
                         marginBottom: 20,
-                        display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
-
                     }}>
                         <img
                             src={avatarUrl}
@@ -139,6 +137,7 @@ export default {
                         />
                         {/* Level Badge */}
                         <div style={{
+                            display: 'flex',
                             position: 'absolute',
                             bottom: -5,
                             right: -5,
@@ -147,7 +146,6 @@ export default {
                             borderRadius: '50%',
                             width: 60,
                             height: 60,
-                            display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: 20,
@@ -158,61 +156,75 @@ export default {
                         </div>
                     </div>
 
-                    {/* Progress Bar */}
+                    {/* Progress Section */}
                     {showProgress && (
                         <div style={{
-                            width: 200,
-                            height: 8,
-                            backgroundColor: currentTheme.secondary,
-                            borderRadius: 4,
-                            overflow: 'hidden',
-                            display: 'contents'
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            width: 200
                         }}>
+                            {/* Progress Bar Container */}
                             <div style={{
-                                width: `${expPercentage}%`,
-                                height: '100%',
-                                background: `linear-gradient(90deg, ${currentTheme.accent} 0%, ${currentTheme.accent}80 100%)`,
+                                display: 'flex',
+                                width: '100%',
+                                height: 8,
+                                backgroundColor: currentTheme.secondary,
                                 borderRadius: 4,
-                                transition: 'width 0.3s ease'
-                            }} />
-                        </div>
-                    )}
+                                overflow: 'hidden',
+                                marginBottom: 8
+                            }}>
+                                <div style={{
+                                    display: 'block',
+                                    width: `${expPercentage}%`,
+                                    height: '100%',
+                                    background: `linear-gradient(90deg, ${currentTheme.accent} 0%, ${currentTheme.accent}80 100%)`,
+                                    borderRadius: 4
+                                }} />
+                            </div>
 
-                    {showProgress && (
-                        <div style={{
-                            fontSize: 12,
-                            opacity: 0.7,
-                            marginTop: 5,
-                            display: 'contents'
-                        }}>
-                            <span>{experience}/{experienceToNext} EXP</span>
+                            {/* Experience Text */}
+                            <div style={{
+                                display: 'flex',
+                                fontSize: 12,
+                                opacity: 0.7
+                            }}>
+                                {experience}/{experienceToNext} EXP
+                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* Info Section */}
+                {/* Right Side - Info Section */}
                 <div style={{
-                    display: 'contents',
+                    display: 'flex',
+                    flexDirection: 'column',
                     flex: 1,
                     justifyContent: 'space-between'
                 }}>
-                    {/* Header */}
+                    {/* Header Info */}
                     <div style={{
-                        display: 'contents'
+                        display: 'flex',
+                        flexDirection: 'column'
                     }}>
-                        <h1 style={{
-                            fontSize: 42,
-                            fontWeight: 800,
-                            margin: 0,
-                            marginBottom: 8,
-                            background: `linear-gradient(45deg, ${currentTheme.text} 0%, ${currentTheme.accent} 100%)`,
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            color: 'transparent',
-                            display: 'contents'
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column'
                         }}>
-                            {name}
-                        </h1>
+                            <h1 style={{
+                                fontSize: 42,
+                                fontWeight: 800,
+                                margin: 0,
+                                marginBottom: 8,
+                                background: `linear-gradient(45deg, ${currentTheme.text} 0%, ${currentTheme.accent} 100%)`,
+                                backgroundClip: 'text',
+                                WebkitBackgroundClip: 'text',
+                                color: 'transparent'
+                            }}>
+                                {name}
+                            </h1>
+                        </div>
+
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -239,45 +251,96 @@ export default {
                         </div>
                     </div>
 
-                    {/* Stats Grid */}
+                    {/* Stats Section */}
                     <div style={{
-                        display: "contents",
-                        gap: 15,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
                         marginBottom: 20
                     }}>
-                        {Object.entries(stats).map(([statName, statValue]) => {
-                            const calculatedValue = calculateStat(statValue);
-                            const statColor = getStatColor(statName);
+                        {/* Stats Row 1 */}
+                        <div style={{
+                            display: 'flex',
+                            gap: 15
+                        }}>
+                            {Object.entries(stats).slice(0, 3).map(([statName, statValue]) => {
+                                const calculatedValue = calculateStat(statValue);
+                                const statColor = getStatColor(statName);
 
-                            return (
-                                <div key={statName} style={{
-                                    backgroundColor: currentTheme.secondary,
-                                    borderRadius: 12,
-                                    padding: 12,
-                                    borderLeft: `4px solid ${statColor}`,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 4
-                                }}>
-                                    <span style={{
-                                        fontSize: 12,
-                                        opacity: 0.7,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.5px',
-                                        fontWeight: 600
+                                return (
+                                    <div key={statName} style={{
+                                        display: 'flex',
+                                        backgroundColor: currentTheme.secondary,
+                                        borderRadius: 12,
+                                        padding: 12,
+                                        borderLeft: `4px solid ${statColor}`,
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        flex: 1
                                     }}>
-                                        {statName}
-                                    </span>
-                                    <span style={{
-                                        fontSize: 20,
-                                        fontWeight: 700,
-                                        color: statColor
+                                        <span style={{
+                                            fontSize: 11,
+                                            opacity: 0.7,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.5px',
+                                            fontWeight: 600,
+                                            marginBottom: 4
+                                        }}>
+                                            {statName}
+                                        </span>
+                                        <span style={{
+                                            fontSize: 18,
+                                            fontWeight: 700,
+                                            color: statColor
+                                        }}>
+                                            {calculatedValue}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Stats Row 2 */}
+                        <div style={{
+                            display: 'flex',
+                            gap: 15
+                        }}>
+                            {Object.entries(stats).slice(3).map(([statName, statValue]) => {
+                                const calculatedValue = calculateStat(statValue);
+                                const statColor = getStatColor(statName);
+
+                                return (
+                                    <div key={statName} style={{
+                                        display: 'flex',
+                                        backgroundColor: currentTheme.secondary,
+                                        borderRadius: 12,
+                                        padding: 12,
+                                        borderLeft: `4px solid ${statColor}`,
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        flex: 1
                                     }}>
-                                        {calculatedValue}
-                                    </span>
-                                </div>
-                            );
-                        })}
+                                        <span style={{
+                                            fontSize: 11,
+                                            opacity: 0.7,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.5px',
+                                            fontWeight: 600,
+                                            marginBottom: 4
+                                        }}>
+                                            {statName}
+                                        </span>
+                                        <span style={{
+                                            fontSize: 18,
+                                            fontWeight: 700,
+                                            color: statColor
+                                        }}>
+                                            {calculatedValue}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     {/* Footer Info */}
