@@ -1,6 +1,6 @@
 import { ButtonInteraction } from "discord.js";
-import avatarCommand from "./avatar";
-import { clearAvatarCache } from "./avatar";
+import avatarCommand from "../avatar/avatar";
+import { clearAvatarCache } from "../avatar/avatar";
 
 export default async function backToAvatars(interaction: ButtonInteraction) {
     try {

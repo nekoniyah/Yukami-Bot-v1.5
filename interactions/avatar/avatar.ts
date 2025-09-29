@@ -6,16 +6,16 @@ import {
     ChatInputCommandInteraction,
     StringSelectMenuBuilder,
 } from "discord.js";
-import { Avatar } from "../utils/models";
-import locale from "../locales/locale";
-import { renderComponentToPng } from "../utils/render";
+import { Avatar } from "../../utils/models";
+import locale from "../../locales/locale";
+import { renderComponentToPng } from "../../utils/render";
 import {
     YukamiEmbed,
     createErrorEmbed,
     createLoadingEmbed,
     EMBED_EMOJIS,
     validateEmbed,
-} from "../utils/embeds";
+} from "../../utils/embeds";
 
 // Cache for avatar data to reduce database queries
 const avatarCache = new Map<string, { data: Avatar[]; expires: number }>();

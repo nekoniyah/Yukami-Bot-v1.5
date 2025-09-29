@@ -9,8 +9,8 @@ import {
     ModalSubmitInteraction,
     StringSelectMenuInteraction,
 } from "discord.js";
-import { Avatar } from "../utils/models";
-import displays from "../db/displays.json";
+import { Avatar } from "../../utils/models";
+import displays from "../../db/displays.json";
 
 /**
  * Avatar Creation System

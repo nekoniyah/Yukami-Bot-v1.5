@@ -5,10 +5,10 @@ import {
     EmbedBuilder,
     StringSelectMenuInteraction,
 } from "discord.js";
-import { Avatar } from "../utils/models";
-import { renderComponentToPng } from "../utils/render";
-import displays from "../db/displays.json";
-import stats from "../db/stats.json";
+import { Avatar } from "../../utils/models";
+import { renderComponentToPng } from "../../utils/render";
+import displays from "../../db/displays.json";
+import stats from "../../db/stats.json";
 
 export default async function avatarSelect(
     interaction: StringSelectMenuInteraction

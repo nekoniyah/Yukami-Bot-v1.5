@@ -5,8 +5,8 @@ import {
     ButtonStyle,
     EmbedBuilder,
 } from "discord.js";
-import { Avatar } from "../utils/models";
-import locale from "../locales/locale";
+import { Avatar } from "../../utils/models";
+import locale from "../../locales/locale";
 
 export default async function (interaction: ButtonInteraction) {
     let message = await interaction.message.fetch(true);

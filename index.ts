@@ -1,16 +1,18 @@
+// index.ts - Enhanced version with folder support
 import { Client, Partials, GatewayIntentBits } from "discord.js";
-import fs from "fs/promises"; // Use async version
+import fs from "fs/promises";
 import path from "path";
 import "dotenv/config";
 
 /**
- * Yukami Bot v1.5 - Main Entry Point
+ * Yukami Bot v1.5 - Enhanced Main Entry Point
  *
- * A Discord bot featuring avatar roleplay system, reaction roles,
- * leveling mechanics, and welcome messages.
- *
- * @version 1.5.0
- * @author nekoniyah
+ * Features:
+ * - Recursive folder support for events, interactions, and registers
+ * - Enhanced error handling and logging
+ * - Performance monitoring
+ * - Graceful shutdown handling
+ * - Database initialization
  */
 
 // Environment validation
@@ -19,10 +21,6 @@ if (!process.env.TOKEN) {
     process.exit(1);
 }
 
-/**
- * Discord client configuration with optimized intents
- * Only requesting the permissions we actually need
- */
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -38,7 +36,6 @@ const client = new Client({
         Partials.GuildMember,
         Partials.User,
     ],
-    // Performance optimizations
     failIfNotExists: false,
     allowedMentions: {
         parse: ["users", "roles"],
@@ -47,25 +44,68 @@ const client = new Client({
 });
 
 /**
- * Event loader with proper error handling and logging
+ * Recursively load TypeScript files from directories
+ */
+async function loadFilesRecursively(dirPath: string): Promise<string[]> {
+    const files: string[] = [];
+
+    try {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(dirPath, entry.name);
+
+            if (entry.isDirectory()) {
+                // Skip hidden directories, node_modules, and build directories
+                if (
+                    !entry.name.startsWith(".") &&
+                    entry.name !== "node_modules" &&
+                    entry.name !== "dist" &&
+                    entry.name !== "build"
+                ) {
+                    const subFiles = await loadFilesRecursively(fullPath);
+                    files.push(...subFiles);
+                }
+            } else if (entry.isFile() && entry.name.endsWith(".ts")) {
+                files.push(fullPath);
+            }
+        }
+    } catch (error) {
+        console.error(`❌ Failed to read directory ${dirPath}:`, error);
+    }
+
+    return files;
+}
+
+/**
+ * Enhanced event loader with folder support and error handling
  */
 async function loadEvents(): Promise<void> {
     const eventPath = path.join(__dirname, "events");
 
     try {
-        const eventFiles = await fs.readdir(eventPath);
-        const tsFiles = eventFiles.filter((file) => file.endsWith(".ts"));
+        const eventFiles = await loadFilesRecursively(eventPath);
 
-        console.log(`📂 Loading ${tsFiles.length} event handlers...`);
+        if (eventFiles.length === 0) {
+            console.warn("⚠️ No event files found");
+            return;
+        }
 
-        for (const file of tsFiles) {
-            const eventName = file.replace(".ts", "");
+        console.log(`📂 Loading ${eventFiles.length} event handlers...`);
+
+        let loadedCount = 0;
+        for (const filePath of eventFiles) {
+            const eventName = path.basename(filePath, ".ts");
 
             try {
-                const { default: eventHandler } = await import(
-                    path.join(eventPath, file)
-                );
+                const { default: eventHandler } = await import(filePath);
 
+                if (!eventHandler) {
+                    console.warn(`⚠️ No default export in ${eventName}`);
+                    continue;
+                }
+
+                // Wrap event handler with error handling
                 client.on(eventName, async (...args) => {
                     try {
                         await eventHandler(...args);
@@ -74,13 +114,17 @@ async function loadEvents(): Promise<void> {
                     }
                 });
 
-                console.log(`✅ Loaded event: ${eventName}`);
+                const relativePath = path.relative(eventPath, filePath);
+                console.log(`✅ Loaded event: ${eventName} (${relativePath})`);
+                loadedCount++;
             } catch (error) {
                 console.error(`❌ Failed to load event ${eventName}:`, error);
             }
         }
 
-        console.log(`🎉 Successfully loaded ${tsFiles.length} events`);
+        console.log(
+            `🎉 Successfully loaded ${loadedCount}/${eventFiles.length} events`
+        );
     } catch (error) {
         console.error("❌ Failed to read events directory:", error);
         process.exit(1);

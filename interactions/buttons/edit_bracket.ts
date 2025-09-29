@@ -1,6 +1,5 @@
 import { ButtonInteraction, EmbedBuilder } from "discord.js";
-import { Avatar } from "../utils/models";
-import locale from "../locales/locale";
+import { Avatar } from "../../utils/models";
 
 export default async function (
     interaction: ButtonInteraction,
@@ -8,14 +7,10 @@ export default async function (
 ) {
     let message = await interaction.message.fetch(true);
 
-    let avatar = avatars.find(
-        (a) =>
-            a.get("name") === message.embeds[0].title?.replace("Editing ", "")
-    );
-    const loc = await locale(interaction.locale ?? "en");
-
     let embed = EmbedBuilder.from(message.embeds[0])
-        .setDescription(loc.ui.avatars.create_prompt_image)
+        .setDescription(
+            "Please provide a new bracket (include the word 'text')."
+        )
         .setColor("#5865F2")
         .setAuthor({
             name: interaction.user.tag,
@@ -25,6 +20,11 @@ export default async function (
             text: process.env.NAME + " • Edit Avatar",
             iconURL: interaction.client.user?.displayAvatarURL(),
         });
+
+    let avatar = avatars.find(
+        (a) =>
+            a.get("name") === message.embeds[0].title?.replace("Editing ", "")
+    );
 
     message.edit({ embeds: [embed] });
     interaction.deleteReply();
@@ -40,24 +40,31 @@ export default async function (
 
     if (!msg) return;
 
+    if (!msg.content.includes("text")) {
+        await interaction.editReply({
+            content: "Please include 'text'",
+        });
+
+        setTimeout(() => {
+            interaction.deleteReply();
+        }, 30000);
+    }
+
     await Avatar.update(
-        { icon: msg.content },
+        { bracket: msg.content },
         { where: { userId: interaction.user.id, id: avatar?.get("id") } }
     );
 
-    embed
-        .setDescription(null)
-        .setFields(
-            {
-                name: "Name",
-                value: avatar?.get("name") as string,
-            },
-            {
-                name: "Bracket",
-                value: avatar?.get("bracket") as string,
-            }
-        )
-        .setThumbnail(msg.content);
+    embed.setDescription(null).setFields(
+        {
+            name: "Name",
+            value: avatar?.get("name") as string,
+        },
+        {
+            name: "Bracket",
+            value: msg.content,
+        }
+    );
 
     await msg.delete();
 

@@ -1,55 +1,176 @@
+// events/interactionCreate.ts - Enhanced version with folder support
 import eventBuilder from "../utils/eventBuilder";
 import { Avatar } from "../utils/models";
-import { Interaction } from "discord.js";
+import {
+    AnySelectMenuInteraction,
+    AutocompleteInteraction,
+    ButtonInteraction,
+    ChatInputCommandInteraction,
+    Interaction,
+    ModalSubmitInteraction,
+    StringSelectMenuInteraction,
+} from "discord.js";
 import {
     handleAvatarModalSubmission,
     handleSpeciesSelection,
-} from "../interactions/createAvatar";
+} from "../interactions/buttons/createAvatar";
 import {
     createErrorEmbed,
     createCommandNotFoundEmbed,
     createLoadingEmbed,
-    EmbedIntegrationExamples,
 } from "../utils/embeds";
+import fs from "fs/promises";
+import path from "path";
 
 /**
- * Interaction Create Event Handler with Enhanced Embed Support
+ * Enhanced Interaction Create Event Handler with Folder Support
  *
- * Central handler for all Discord interactions (commands, buttons, modals, etc.)
- * with optimized error handling, caching, and consistent embed styling.
+ * Features:
+ * - Recursive interaction handler loading
+ * - Dynamic import with fallback search
+ * - Enhanced caching and performance monitoring
+ * - Comprehensive error handling
  */
 
-// Cache for user avatars to reduce database queries
-const avatarCache = new Map<
-    string,
-    {
-        avatars: Avatar[];
-        expiresAt: number;
-    }
->();
+// Global interaction handler registry
+const interactionHandlers = new Map<string, any>();
+const handlerLoadTime = new Map<string, number>();
 
-const CACHE_TTL = parseInt(process.env.CACHE_TTL || "300000"); // Default 5 minutes
+// Cache for user avatars
+const avatarCache = new Map<string, { avatars: Avatar[]; expiresAt: number }>();
+const CACHE_TTL = parseInt(process.env.CACHE_TTL || "300000");
 
 /**
- * Get user avatars with caching
- * @param userId - Discord user ID
- * @returns User's avatars
+ * Recursively load interaction handlers from directories
+ */
+async function loadInteractionHandlers(): Promise<void> {
+    const interactionPath = path.join(__dirname, "..", "interactions");
+
+    async function loadFromDirectory(
+        dirPath: string,
+        prefix = ""
+    ): Promise<void> {
+        try {
+            const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+            for (const entry of entries) {
+                const fullPath = path.join(dirPath, entry.name);
+
+                if (entry.isDirectory()) {
+                    // Recursively load from subdirectories
+                    const newPrefix = prefix
+                        ? `${prefix}/${entry.name}`
+                        : entry.name;
+                    await loadFromDirectory(fullPath, newPrefix);
+                } else if (entry.name.endsWith(".ts")) {
+                    const handlerName = prefix
+                        ? `${prefix}/${path.basename(entry.name, ".ts")}`
+                        : path.basename(entry.name, ".ts");
+
+                    try {
+                        const startTime = Date.now();
+                        const { default: handler } = await import(fullPath);
+
+                        if (handler) {
+                            interactionHandlers.set(handlerName, handler);
+                            handlerLoadTime.set(
+                                handlerName,
+                                Date.now() - startTime
+                            );
+
+                            // Also register without prefix for backward compatibility
+                            const simpleName = path.basename(entry.name, ".ts");
+                            if (!interactionHandlers.has(simpleName)) {
+                                interactionHandlers.set(simpleName, handler);
+                            }
+
+                            console.log(
+                                `✅ Loaded interaction handler: ${handlerName}`
+                            );
+                        }
+                    } catch (error) {
+                        console.error(
+                            `❌ Failed to load handler ${handlerName}:`,
+                            error
+                        );
+                    }
+                }
+            }
+        } catch (error) {
+            console.error(
+                `❌ Failed to read interactions directory ${dirPath}:`,
+                error
+            );
+        }
+    }
+
+    console.log("🎮 Loading interaction handlers...");
+    await loadFromDirectory(interactionPath);
+    console.log(`🎉 Loaded ${interactionHandlers.size} interaction handlers`);
+}
+
+/**
+ * Get interaction handler with intelligent fallback search
+ */
+function getInteractionHandler(identifier: string): any {
+    // Try exact match first
+    if (interactionHandlers.has(identifier)) {
+        return interactionHandlers.get(identifier);
+    }
+
+    // Try with common organization prefixes
+    const organizationPrefixes = [
+        "commands",
+        "buttons",
+        "modals",
+        "selects",
+        "menus",
+        "slash",
+        "context",
+        "autocomplete",
+    ];
+
+    for (const prefix of organizationPrefixes) {
+        const prefixedId = `${prefix}/${identifier}`;
+        if (interactionHandlers.has(prefixedId)) {
+            return interactionHandlers.get(prefixedId);
+        }
+    }
+
+    // Try to find by partial match (for dynamic IDs with parameters)
+    for (const [key, handler] of interactionHandlers.entries()) {
+        const keyParts = key.split("/");
+        const lastPart = keyParts[keyParts.length - 1];
+
+        // Check if identifier starts with the handler name
+        if (identifier.startsWith(lastPart)) {
+            return handler;
+        }
+
+        // Check if the handler name is contained in the identifier
+        if (identifier.includes(lastPart)) {
+            return handler;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Get user avatars with enhanced caching
  */
 async function getUserAvatars(userId: string): Promise<Avatar[]> {
-    // Check cache first
     const cached = avatarCache.get(userId);
     if (cached && cached.expiresAt > Date.now()) {
         return cached.avatars;
     }
 
     try {
-        // Fetch from database
         const avatars = await Avatar.findAll({
             where: { userId },
-            order: [["createdAt", "DESC"]], // Most recent first
+            order: [["createdAt", "DESC"]],
         });
 
-        // Cache the result
         avatarCache.set(userId, {
             avatars,
             expiresAt: Date.now() + CACHE_TTL,
@@ -63,14 +184,16 @@ async function getUserAvatars(userId: string): Promise<Avatar[]> {
 }
 
 /**
- * Clear avatar cache for a user (call when avatars are modified)
- * @param userId - Discord user ID
+ * Clear avatar cache for a user
  */
 export function clearAvatarCache(userId: string): void {
     avatarCache.delete(userId);
 }
 
-// Clean up expired cache entries periodically
+// Load handlers on startup
+loadInteractionHandlers();
+
+// Clean up expired cache entries
 setInterval(() => {
     const now = Date.now();
     let cleanedCount = 0;
@@ -87,14 +210,10 @@ setInterval(() => {
     }
 }, CACHE_TTL);
 
-/**
- * Handle different interaction types with enhanced error handling
- */
 export default eventBuilder<"interactionCreate">(
     async (interaction: Interaction) => {
         const startTime = Date.now();
 
-        // Performance monitoring
         const perfLogger = {
             command: "",
             userId: "user" in interaction ? interaction.user.id : "unknown",
@@ -102,39 +221,27 @@ export default eventBuilder<"interactionCreate">(
         };
 
         try {
-            // Handle slash commands
             if (interaction.isChatInputCommand()) {
                 perfLogger.command = interaction.commandName;
                 await handleSlashCommand(interaction);
-            }
-            // Handle button interactions
-            else if (interaction.isButton()) {
+            } else if (interaction.isButton()) {
                 perfLogger.command = `button:${interaction.customId}`;
                 await handleButtonInteraction(interaction);
-            }
-            // Handle select menu interactions
-            else if (interaction.isAnySelectMenu()) {
+            } else if (interaction.isAnySelectMenu()) {
                 perfLogger.command = `select:${interaction.customId}`;
                 await handleSelectMenuInteraction(interaction);
-            }
-            // Handle modal submissions
-            else if (interaction.isModalSubmit()) {
+            } else if (interaction.isModalSubmit()) {
                 perfLogger.command = `modal:${interaction.customId}`;
                 await handleModalSubmission(interaction);
+            } else if (interaction.isAutocomplete()) {
+                perfLogger.command = `autocomplete:${interaction.commandName}`;
+                await handleAutocomplete(interaction);
             }
 
-            // Performance logging
             const duration = Date.now() - startTime;
             if (duration > 1000) {
                 console.warn(
-                    `⚠️ Slow interaction: ${perfLogger.command} took ${duration}ms (User: ${perfLogger.userId}, Guild: ${perfLogger.guildId})`
-                );
-            } else if (
-                process.env.NODE_ENV === "development" &&
-                duration > 500
-            ) {
-                console.log(
-                    `📊 Interaction timing: ${perfLogger.command} took ${duration}ms`
+                    `⚠️ Slow interaction: ${perfLogger.command} took ${duration}ms`
                 );
             }
         } catch (error) {
@@ -142,7 +249,7 @@ export default eventBuilder<"interactionCreate">(
                 command: perfLogger.command,
                 userId: perfLogger.userId,
                 guildId: perfLogger.guildId,
-                error: error,
+                error,
             });
             await handleInteractionError(interaction, error as Error);
         }
@@ -150,29 +257,32 @@ export default eventBuilder<"interactionCreate">(
 );
 
 /**
- * Handle slash command interactions with enhanced error handling
+ * Enhanced slash command handler with dynamic loading
  */
-async function handleSlashCommand(interaction: any): Promise<void> {
+async function handleSlashCommand(
+    interaction: ChatInputCommandInteraction
+): Promise<void> {
     const { commandName } = interaction;
+
+    const handler = getInteractionHandler(commandName);
+
+    if (!handler) {
+        console.error(`❌ Command handler not found: ${commandName}`);
+        const errorEmbed = createCommandNotFoundEmbed(commandName);
+
+        if (interaction.deferred) {
+            await interaction.editReply({ embeds: [errorEmbed] });
+        } else {
+            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        }
+        return;
+    }
 
     try {
         // Show loading state for commands that might take time
         const loadingCommands = ["avatar", "travel", "rr"];
-        if (loadingCommands.includes(commandName)) {
+        if (loadingCommands.includes(commandName) && !interaction.deferred) {
             await interaction.deferReply({ ephemeral: false });
-        }
-
-        // Dynamic import for better performance
-        const { default: handler } = await import(
-            `../interactions/${commandName}.ts`
-        );
-
-        // Defer reply if not already deferred and command needs it
-        if (!interaction.deferred && !interaction.replied) {
-            const needsDefer = await checkIfCommandNeedsDefer(commandName);
-            if (needsDefer) {
-                await interaction.deferReply({ ephemeral: false });
-            }
         }
 
         // Get user avatars for commands that need them
@@ -193,79 +303,46 @@ async function handleSlashCommand(interaction: any): Promise<void> {
         if (modifyingCommands.includes(commandName)) {
             clearAvatarCache(interaction.user.id);
         }
-    } catch (importError) {
-        console.error(
-            `❌ Command handler not found: ${commandName}`,
-            importError
-        );
-
-        const errorEmbed = createCommandNotFoundEmbed(commandName);
-
-        if (interaction.deferred) {
-            await interaction.editReply({ embeds: [errorEmbed] });
-        } else {
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-        }
+    } catch (error) {
+        console.error(`❌ Error executing command ${commandName}:`, error);
+        await handleInteractionError(interaction, error as Error);
     }
 }
 
 /**
- * Handle button interactions with enhanced routing
+ * Enhanced button interaction handler
  */
-async function handleButtonInteraction(interaction: any): Promise<void> {
+async function handleButtonInteraction(
+    interaction: ButtonInteraction
+): Promise<void> {
     const { customId } = interaction;
 
-    await interaction.deferReply();
+    const handler = getInteractionHandler(customId);
 
-    // Special handling for avatar-related buttons
-    if (customId === "createAvatar") {
-        const { default: createAvatar } = await import(
-            "../interactions/createAvatar"
-        );
-        await createAvatar(interaction);
-        return;
-    }
-
-    // Handle paginated avatar buttons
-    if (customId.startsWith("avatarPage")) {
-        const { default: avatarHandler } = await import(
-            "../interactions/avatar"
-        );
-        await avatarHandler(interaction);
-        return;
-    }
-
-    // Handle refresh buttons
-    if (customId === "refreshAvatars") {
-        clearAvatarCache(interaction.user.id);
-        const { default: avatarHandler } = await import(
-            "../interactions/avatar"
-        );
-        await avatarHandler(interaction);
-        return;
-    }
-
-    try {
-        // Dynamic import for other button handlers
-        const { default: handler } = await import(
-            `../interactions/${customId}.ts`
-        );
-
-        if (!interaction.deferred && !interaction.replied) {
-            await interaction.deferUpdate();
+    if (!handler) {
+        // Try legacy handling for specific patterns
+        if (customId === "createAvatar") {
+            const { default: createAvatar } = await import(
+                "../interactions/buttons/createAvatar"
+            );
+            await interaction.deferReply();
+            await createAvatar(interaction);
+            return;
         }
 
-        const avatars = await getUserAvatars(interaction.user.id);
-        await handler(interaction, avatars);
-    } catch (importError) {
-        console.error(`❌ Button handler not found: ${customId}`, importError);
+        if (customId.startsWith("avatarPage")) {
+            const { default: avatarHandler } = await import(
+                "../interactions/avatar/avatar"
+            );
+            await interaction.deferReply();
+            await avatarHandler(interaction);
+            return;
+        }
 
+        console.error(`❌ Button handler not found: ${customId}`);
         const errorEmbed = createErrorEmbed(
             "Action Unavailable",
-            "This action is currently unavailable or has expired.",
-            process.env.NODE_ENV === "production"
-                ? undefined
-                : "Handler not found"
+            "This action is currently unavailable or has expired."
         );
 
         try {
@@ -280,64 +357,46 @@ async function handleButtonInteraction(interaction: any): Promise<void> {
         } catch (replyError) {
             console.error("Failed to send button error message:", replyError);
         }
-    }
-}
-
-/**
- * Handle select menu interactions with enhanced routing
- */
-async function handleSelectMenuInteraction(interaction: any): Promise<void> {
-    const { customId, values } = interaction;
-
-    await interaction.deferReply();
-    // Handle species selection for avatar creation
-    if (customId.startsWith("species_select_")) {
-        await handleSpeciesSelection(interaction);
-        return;
-    }
-
-    // Handle avatar selection
-    if (customId === "avatarSelect") {
-        const { default: avatarSelectHandler } = await import(
-            "../interactions/avatarSelect"
-        );
-        await avatarSelectHandler(interaction);
-        return;
-    }
-
-    // Handle reaction role selection
-    if (customId.startsWith("select_rr_")) {
-        const { default: rrHandler } = await import(
-            "../interactions/select_rr"
-        );
-        await rrHandler(interaction);
         return;
     }
 
     try {
-        const baseCustomId = customId.split("_")[0]; // Extract base ID
-        const { default: handler } = await import(
-            `../interactions/${baseCustomId}.ts`
-        );
-
         if (!interaction.deferred && !interaction.replied) {
             await interaction.deferUpdate();
         }
 
         const avatars = await getUserAvatars(interaction.user.id);
         await handler(interaction, avatars);
-    } catch (importError) {
-        console.error(
-            `❌ Select menu handler not found: ${customId}`,
-            importError
-        );
+    } catch (error) {
+        console.error(`❌ Error in button handler ${customId}:`, error);
+        await handleInteractionError(interaction, error as Error);
+    }
+}
 
+/**
+ * Enhanced select menu interaction handler
+ */
+async function handleSelectMenuInteraction(
+    interaction: AnySelectMenuInteraction
+): Promise<void> {
+    const { customId } = interaction;
+
+    // Handle special cases first
+    if (customId.startsWith("species_select_")) {
+        await interaction.deferReply();
+        await handleSpeciesSelection(
+            interaction as StringSelectMenuInteraction
+        );
+        return;
+    }
+
+    const handler = getInteractionHandler(customId);
+
+    if (!handler) {
+        console.error(`❌ Select menu handler not found: ${customId}`);
         const errorEmbed = createErrorEmbed(
             "Selection Unavailable",
-            "This selection is currently unavailable.",
-            process.env.NODE_ENV === "production"
-                ? undefined
-                : "Handler not found"
+            "This selection is currently unavailable."
         );
 
         try {
@@ -345,176 +404,136 @@ async function handleSelectMenuInteraction(interaction: any): Promise<void> {
         } catch (replyError) {
             console.error("Failed to send select error message:", replyError);
         }
+        return;
+    }
+
+    try {
+        if (!interaction.deferred && !interaction.replied) {
+            await interaction.deferReply();
+        }
+
+        const avatars = await getUserAvatars(interaction.user.id);
+        await handler(interaction, avatars);
+    } catch (error) {
+        console.error(`❌ Error in select menu handler ${customId}:`, error);
+        await handleInteractionError(interaction, error as Error);
     }
 }
 
 /**
- * Handle modal submissions with enhanced routing
+ * Enhanced modal submission handler
  */
-async function handleModalSubmission(interaction: any): Promise<void> {
+async function handleModalSubmission(
+    interaction: ModalSubmitInteraction
+): Promise<void> {
     const { customId } = interaction;
 
-    // Handle avatar creation modal
+    // Handle special cases first
     if (customId.startsWith("avatar_modal_")) {
         await handleAvatarModalSubmission(interaction);
         return;
     }
 
-    // Handle welcome message modal
-    if (customId.startsWith("welcome_modal_")) {
-        const { default: welcomeHandler } = await import(
-            "../interactions/welcome"
-        );
-        await welcomeHandler(interaction);
-        return;
-    }
+    const handler = getInteractionHandler(customId);
 
-    // Handle name/URL edit modals
-    if (
-        customId.startsWith("edit_name_") ||
-        customId.startsWith("edit_avatar_url_")
-    ) {
-        const handlerName = customId.split("_").slice(0, 2).join("_");
+    if (!handler) {
+        console.error(`❌ Modal handler not found: ${customId}`);
+        const errorEmbed = createErrorEmbed(
+            "Submission Failed",
+            "Unable to process your submission at this time."
+        );
+
         try {
-            const { default: handler } = await import(
-                `../interactions/${handlerName}.ts`
-            );
-            await handler(interaction);
-            clearAvatarCache(interaction.user.id);
-        } catch (error) {
-            console.error(`Modal handler error for ${customId}:`, error);
-            const errorEmbed = EmbedIntegrationExamples.handleInteractionError(
-                error as Error,
-                `modal:${customId}`
-            );
             await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        } catch (replyError) {
+            console.error("Failed to send modal error message:", replyError);
         }
         return;
     }
 
-    // Log unhandled modals
-    console.warn(`⚠️ Unhandled modal submission: ${customId}`);
+    try {
+        await handler(interaction);
+        clearAvatarCache(interaction.user.id);
+    } catch (error) {
+        console.error(`❌ Error in modal handler ${customId}:`, error);
+        await handleInteractionError(interaction, error as Error);
+    }
+}
+
+/**
+ * Handle autocomplete interactions
+ */
+async function handleAutocomplete(
+    interaction: AutocompleteInteraction
+): Promise<void> {
+    const { commandName } = interaction;
+
+    const handler =
+        getInteractionHandler(`${commandName}_autocomplete`) ||
+        getInteractionHandler(`autocomplete/${commandName}`);
+
+    if (!handler) {
+        // Provide empty choices if no autocomplete handler
+        await interaction.respond([]);
+        return;
+    }
+
+    try {
+        await handler(interaction);
+    } catch (error) {
+        console.error(
+            `❌ Error in autocomplete handler ${commandName}:`,
+            error
+        );
+        await interaction.respond([]);
+    }
+}
+
+/**
+ * Handle interaction errors with user-friendly messages
+ */
+async function handleInteractionError(
+    interaction: any,
+    error: Error
+): Promise<void> {
+    console.error("❌ Interaction error:", error);
 
     const errorEmbed = createErrorEmbed(
-        "Modal Handler Missing",
-        "This form submission could not be processed.",
-        process.env.NODE_ENV === "production"
-            ? undefined
-            : `Missing handler for: ${customId}`
+        "Something went wrong!",
+        "An unexpected error occurred while processing your request.",
+        process.env.NODE_ENV === "production" ? undefined : error.message
     );
 
     try {
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-    } catch (replyError) {
-        console.error("Failed to send modal error message:", replyError);
-    }
-}
-
-/**
- * Handle interaction errors gracefully with enhanced embed support
- */
-async function handleInteractionError(
-    interaction: Interaction,
-    error: Error
-): Promise<void> {
-    // Determine error type and create appropriate embed
-    let errorEmbed;
-
-    if (error.message.includes("Missing Permissions")) {
-        errorEmbed = createErrorEmbed(
-            "Permission Error",
-            "The bot doesn't have the necessary permissions to complete this action.",
-            "Please check the bot's role permissions."
-        );
-    } else if (error.message.includes("Unknown")) {
-        errorEmbed = createErrorEmbed(
-            "Resource Not Found",
-            "The requested resource could not be found.",
-            "It may have been deleted or moved."
-        );
-    } else if (error.message.includes("Rate limit")) {
-        errorEmbed = createErrorEmbed(
-            "Rate Limited",
-            "Too many requests. Please wait a moment and try again.",
-            "Discord has temporary rate limits to prevent spam."
-        );
-    } else {
-        errorEmbed = createErrorEmbed(
-            "Unexpected Error",
-            "Something went wrong while processing your request.",
-            process.env.NODE_ENV === "production"
-                ? "If this persists, please contact support."
-                : error.message
-        );
-    }
-
-    try {
-        if (interaction.isRepliable()) {
-            if (interaction.deferred || interaction.replied) {
-                await interaction.editReply({ embeds: [errorEmbed] });
-            } else {
-                await interaction.reply({
-                    embeds: [errorEmbed],
-                    ephemeral: true,
-                });
-            }
+        if (interaction.deferred) {
+            await interaction.editReply({ embeds: [errorEmbed] });
+        } else if (!interaction.replied) {
+            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
         }
     } catch (replyError) {
-        console.error("❌ Failed to send error message:", replyError);
-        if (!interaction.isCommand()) return;
-
-        // Last resort: try to send a simple text message
-        try {
-            if (!interaction.replied && interaction.isRepliable()) {
-                await interaction.reply({
-                    content:
-                        "❌ An error occurred and could not be displayed properly.",
-                    ephemeral: true,
-                });
-            }
-        } catch (finalError) {
-            console.error(
-                "❌ Complete failure to respond to interaction:",
-                finalError
-            );
-        }
+        console.error("Failed to send error message:", replyError);
     }
 }
 
 /**
- * Check if a command needs to be deferred based on its complexity
+ * Reload interaction handlers (for development)
  */
-async function checkIfCommandNeedsDefer(commandName: string): Promise<boolean> {
-    const heavyCommands = [
-        "avatar", // Renders images
-        "travel", // Complex calculations
-        "rr", // Database operations
-        "welcome", // Role validation
-    ];
-
-    return heavyCommands.includes(commandName);
+export async function reloadInteractionHandlers(): Promise<void> {
+    interactionHandlers.clear();
+    handlerLoadTime.clear();
+    await loadInteractionHandlers();
 }
 
 /**
- * Get cache statistics for monitoring
+ * Get handler statistics (for monitoring)
  */
-export function getCacheStats() {
-    const now = Date.now();
-    let activeEntries = 0;
-    let expiredEntries = 0;
-
-    for (const [, data] of avatarCache.entries()) {
-        if (data.expiresAt > now) {
-            activeEntries++;
-        } else {
-            expiredEntries++;
-        }
-    }
-
+export function getHandlerStats(): any {
     return {
-        total: avatarCache.size,
-        active: activeEntries,
-        expired: expiredEntries,
-        hitRatio: 0, // Could be calculated with additional tracking
+        totalHandlers: interactionHandlers.size,
+        averageLoadTime:
+            Array.from(handlerLoadTime.values()).reduce((a, b) => a + b, 0) /
+            handlerLoadTime.size,
+        cacheSize: avatarCache.size,
+        handlers: Array.from(interactionHandlers.keys()).sort(),
     };
 }
