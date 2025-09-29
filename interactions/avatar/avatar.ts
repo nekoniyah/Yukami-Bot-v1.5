@@ -66,7 +66,7 @@ export default async function avatarCommand(
         if (interaction instanceof ChatInputCommandInteraction) {
             await interaction.editReply({ embeds: [loadingEmbed] });
         } else {
-            await interaction.update({ embeds: [loadingEmbed] });
+            await interaction.message.edit({ embeds: [loadingEmbed] });
         }
 
         const avatars = await getUserAvatars(interaction.user.id);

@@ -14,11 +14,7 @@ import {
     handleAvatarModalSubmission,
     handleSpeciesSelection,
 } from "../interactions/buttons/createAvatar";
-import {
-    createErrorEmbed,
-    createCommandNotFoundEmbed,
-    createLoadingEmbed,
-} from "../utils/embeds";
+import { createErrorEmbed, createCommandNotFoundEmbed } from "../utils/embeds";
 import fs from "fs/promises";
 import path from "path";
 
@@ -78,10 +74,27 @@ async function loadInteractionHandlers(): Promise<void> {
                                 Date.now() - startTime
                             );
 
-                            // Also register without prefix for backward compatibility
+                            // Only register without prefix for NON-autocomplete handlers
+                            // and only for root-level handlers
                             const simpleName = path.basename(entry.name, ".ts");
-                            if (!interactionHandlers.has(simpleName)) {
+                            if (
+                                !prefix &&
+                                !interactionHandlers.has(simpleName)
+                            ) {
                                 interactionHandlers.set(simpleName, handler);
+                            } else if (
+                                prefix &&
+                                prefix !== "autocomplete" &&
+                                !interactionHandlers.has(simpleName)
+                            ) {
+                                // For non-autocomplete subdirectory handlers, register without prefix
+                                // but with lower priority (check if it doesn't exist first)
+                                if (!interactionHandlers.has(simpleName)) {
+                                    interactionHandlers.set(
+                                        simpleName,
+                                        handler
+                                    );
+                                }
                             }
 
                             console.log(
@@ -110,15 +123,52 @@ async function loadInteractionHandlers(): Promise<void> {
 }
 
 /**
- * Get interaction handler with intelligent fallback search
+ * Get interaction handler with intelligent fallback search and proper priority
  */
-function getInteractionHandler(identifier: string): any {
-    // Try exact match first
-    if (interactionHandlers.has(identifier)) {
-        return interactionHandlers.get(identifier);
+function getInteractionHandler(
+    identifier: string,
+    interactionType?: string
+): any {
+    // For autocomplete interactions, look specifically for autocomplete handlers
+    if (interactionType === "autocomplete") {
+        const autocompletePath = `autocomplete/${identifier}`;
+        if (interactionHandlers.has(autocompletePath)) {
+            return interactionHandlers.get(autocompletePath);
+        }
+        return null; // Don't fallback for autocomplete
     }
 
-    // Try with common organization prefixes
+    // For slash commands, prioritize main command handlers over autocomplete
+    if (interactionType === "slash" || !interactionType) {
+        // Try main command paths first
+        const mainPaths = [
+            `${identifier}/${identifier}`, // avatar/avatar
+            `commands/${identifier}`,
+            `slash/${identifier}`,
+        ];
+
+        for (const path of mainPaths) {
+            if (interactionHandlers.has(path)) {
+                return interactionHandlers.get(path);
+            }
+        }
+
+        // Try exact match, but skip if it's an autocomplete handler
+        if (interactionHandlers.has(identifier)) {
+            const handler = interactionHandlers.get(identifier);
+            // Check if this might be an autocomplete handler by checking the function name
+            if (handler.name && handler.name.includes("autocomplete")) {
+                // Skip autocomplete handlers for slash commands
+                console.log(
+                    `Skipping autocomplete handler ${handler.name} for slash command`
+                );
+            } else {
+                return handler;
+            }
+        }
+    }
+
+    // Try with common organization prefixes (excluding autocomplete for non-autocomplete requests)
     const organizationPrefixes = [
         "commands",
         "buttons",
@@ -127,8 +177,12 @@ function getInteractionHandler(identifier: string): any {
         "menus",
         "slash",
         "context",
-        "autocomplete",
     ];
+
+    // Add autocomplete only if specifically requested
+    if (interactionType === "autocomplete") {
+        organizationPrefixes.push("autocomplete");
+    }
 
     for (const prefix of organizationPrefixes) {
         const prefixedId = `${prefix}/${identifier}`;
@@ -139,6 +193,14 @@ function getInteractionHandler(identifier: string): any {
 
     // Try to find by partial match (for dynamic IDs with parameters)
     for (const [key, handler] of interactionHandlers.entries()) {
+        // Skip autocomplete handlers for non-autocomplete interactions
+        if (
+            interactionType !== "autocomplete" &&
+            key.startsWith("autocomplete/")
+        ) {
+            continue;
+        }
+
         const keyParts = key.split("/");
         const lastPart = keyParts[keyParts.length - 1];
 
@@ -264,7 +326,7 @@ async function handleSlashCommand(
 ): Promise<void> {
     const { commandName } = interaction;
 
-    const handler = getInteractionHandler(commandName);
+    const handler = getInteractionHandler(commandName, "slash");
 
     if (!handler) {
         console.error(`❌ Command handler not found: ${commandName}`);
@@ -317,7 +379,7 @@ async function handleButtonInteraction(
 ): Promise<void> {
     const { customId } = interaction;
 
-    const handler = getInteractionHandler(customId);
+    const handler = getInteractionHandler(customId, "button");
 
     if (!handler) {
         // Try legacy handling for specific patterns
@@ -461,31 +523,55 @@ async function handleModalSubmission(
 }
 
 /**
- * Handle autocomplete interactions
+ * Handle autocomplete interactions with proper routing
  */
 async function handleAutocomplete(
     interaction: AutocompleteInteraction
 ): Promise<void> {
     const { commandName } = interaction;
 
-    const handler =
-        getInteractionHandler(`${commandName}_autocomplete`) ||
-        getInteractionHandler(`autocomplete/${commandName}`);
-
-    if (!handler) {
-        // Provide empty choices if no autocomplete handler
-        await interaction.respond([]);
-        return;
-    }
-
     try {
+        // Look specifically for autocomplete handlers first
+        const handler = getInteractionHandler(commandName, "autocomplete");
+
+        // Don't fall back to other handlers for autocomplete
+        if (!handler) {
+            console.error(
+                `❌ Autocomplete handler not found: autocomplete/${commandName}`
+            );
+            console.log(
+                `Available autocomplete handlers:`,
+                Array.from(interactionHandlers.keys()).filter((k) =>
+                    k.includes("autocomplete")
+                )
+            );
+            await interaction.respond([]);
+            return;
+        }
+
+        // Verify it's actually an autocomplete-specific handler
+        if (typeof handler !== "function") {
+            console.error(`❌ Invalid autocomplete handler for ${commandName}`);
+            await interaction.respond([]);
+            return;
+        }
+
         await handler(interaction);
     } catch (error) {
         console.error(
             `❌ Error in autocomplete handler ${commandName}:`,
             error
         );
-        await interaction.respond([]);
+        try {
+            if (!interaction.responded) {
+                await interaction.respond([]);
+            }
+        } catch (respondError) {
+            console.error(
+                "Failed to respond to autocomplete interaction:",
+                respondError
+            );
+        }
     }
 }
 
