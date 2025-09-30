@@ -3,6 +3,9 @@ import avatarCommand from "../avatar/avatar";
 import { clearAvatarCache } from "../avatar/avatar";
 
 export default async function backToAvatars(interaction: ButtonInteraction) {
+    if (!interaction.deferred && !interaction.replied)
+        await interaction.deferReply();
+    interaction.deleteReply();
     try {
         // Clear cache to ensure fresh data
         clearAvatarCache(interaction.user.id);
@@ -11,10 +14,5 @@ export default async function backToAvatars(interaction: ButtonInteraction) {
         await avatarCommand(interaction);
     } catch (error) {
         console.error("Error in back navigation:", error);
-        await interaction.reply({
-            content:
-                "❌ Failed to go back. Please try using the avatar command again.",
-            ephemeral: true,
-        });
     }
 }

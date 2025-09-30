@@ -56,20 +56,24 @@ export function clearAvatarCache(userId: string): void {
 export default async function avatarCommand(
     interaction: ChatInputCommandInteraction | ButtonInteraction
 ) {
+    const isBack = interaction.isButton();
+    const avatars = await getUserAvatars(interaction.user.id);
+
     try {
         const startTime = Date.now();
         const loc = await locale(interaction.locale ?? "en");
 
         // Show loading message for better UX
-        const loadingEmbed = createLoadingEmbed("Loading your avatars");
+        const loadingEmbed = createLoadingEmbed("Chargement des avatars");
 
-        if (interaction instanceof ChatInputCommandInteraction) {
-            await interaction.editReply({ embeds: [loadingEmbed] });
+        if (!isBack) {
+            await interaction.editReply({ embeds: [loadingEmbed], files: [] });
         } else {
-            await interaction.message.edit({ embeds: [loadingEmbed] });
+            await interaction.message.edit({
+                embeds: [loadingEmbed],
+                files: [],
+            });
         }
-
-        const avatars = await getUserAvatars(interaction.user.id);
 
         // Create main embed with new utility
         const mainEmbed = new YukamiEmbed()
@@ -92,25 +96,12 @@ export default async function avatarCommand(
             const highestLevel = Math.max(
                 ...avatars.map((avatar) => avatar.get("level") as number)
             );
-            const averageLevel = Math.round(totalLevels / avatars.length);
 
-            mainEmbed
-                .setDescription(
-                    `You have **${avatars.length}** avatar${
-                        avatars.length !== 1 ? "s" : ""
-                    }\n` +
-                        `Select an avatar to edit, or create a new one below.`
-                )
-                .addFormattedField(
-                    "📊 Collection Stats",
-                    `**Total Levels:** ${totalLevels}\n**Highest Level:** ${highestLevel}\n**Average Level:** ${averageLevel}`,
-                    true
-                )
-                .addFormattedField(
-                    "🎮 Quick Actions",
-                    "• Edit existing avatars\n• Create new avatars\n• Delete unwanted avatars\n• View detailed stats",
-                    true
-                );
+            mainEmbed.setDescription(
+                `Tu as **${avatars.length}** avatar${
+                    avatars.length !== 1 ? "s" : ""
+                }\n` + `Selectionnes-en un pour editer, ou créez-en un nouveau.`
+            );
 
             // Add top avatars field
             const topAvatars =
@@ -120,16 +111,16 @@ export default async function avatarCommand(
                         (avatar) =>
                             `${getSpeciesEmoji(
                                 avatar.get("species") as string
-                            )} **${avatar.get("name")}** - Level ${avatar.get(
+                            )} **${avatar.get("name")}** - Niveau ${avatar.get(
                                 "level"
                             )}`
                     )
                     .join("\n") +
                 (avatars.length > 3
-                    ? `\n... and ${avatars.length - 3} more`
+                    ? `\n... et ${avatars.length - 3} de plus`
                     : "");
 
-            mainEmbed.addFormattedField("🌟 Your Avatars", topAvatars);
+            mainEmbed.addFormattedField("🌟 Tes avatars", topAvatars);
 
             // Render character image with performance optimization
             try {
@@ -143,7 +134,6 @@ export default async function avatarCommand(
                             level: avatar.get("level") as number,
                         })),
                         theme: "dark",
-                        layout: avatars.length > 4 ? "grid" : "vertical",
                     }
                 );
 
@@ -152,22 +142,7 @@ export default async function avatarCommand(
                 mainEmbed.setImage("attachment://avatars.png");
             } catch (renderError) {
                 console.warn("Failed to render character image:", renderError);
-                mainEmbed.addFormattedField(
-                    "⚠️ Notice",
-                    "Character preview temporarily unavailable"
-                );
             }
-        } else {
-            mainEmbed
-                .asInfo()
-                .setDescription(
-                    loc.ui.avatars.no_avatars +
-                        "\n\n🚀 **Get started by creating your first avatar!**"
-                )
-                .addFormattedField(
-                    "✨ Why Create Avatars?",
-                    "• Roleplay as different characters\n• Level up and gain experience\n• Customize appearance and stats\n• Participate in adventures"
-                );
         }
 
         // Validate embed before sending
@@ -178,18 +153,13 @@ export default async function avatarCommand(
         // Enhanced button components
         const createButton = new ButtonBuilder()
             .setCustomId("createAvatar")
-            .setLabel(`✨ ${loc.ui.avatars.create_label}`)
+            .setLabel(`✨ Créer un avatar`)
             .setStyle(ButtonStyle.Success)
             .setEmoji("🎭");
 
         const refreshButton = new ButtonBuilder()
             .setCustomId("refreshAvatars")
-            .setLabel("🔄 Refresh")
-            .setStyle(ButtonStyle.Secondary);
-
-        const helpButton = new ButtonBuilder()
-            .setCustomId("avatarHelp")
-            .setLabel("❓ Help")
+            .setLabel("🔄 Rafraîchir")
             .setStyle(ButtonStyle.Secondary);
 
         // Enhanced select menu for avatars
@@ -198,16 +168,16 @@ export default async function avatarCommand(
         if (avatars.length > 0) {
             const avatarSelectMenu = new StringSelectMenuBuilder()
                 .setCustomId("avatarSelect")
-                .setPlaceholder("🎭 Select an avatar to manage...")
+                .setPlaceholder("🎭 Selectionnez un avatar à gérer...")
                 .addOptions(
                     avatars.slice(0, 25).map((avatar) => ({
-                        label: `${avatar.get("name")} (Level ${avatar.get(
+                        label: `${avatar.get("name")} (Niveau ${avatar.get(
                             "level"
                         )})`,
                         value: `${avatar.get("id")}`,
                         description: `${avatar.get(
                             "species"
-                        )} • Click to edit or view details`,
+                        )} • Clickez pour voir ou editer les détails`,
                         emoji: getSpeciesEmoji(avatar.get("species") as string),
                     }))
                 );
@@ -220,13 +190,13 @@ export default async function avatarCommand(
             if (avatars.length > 25) {
                 const prevButton = new ButtonBuilder()
                     .setCustomId("avatarPagePrev")
-                    .setLabel("◀️ Previous")
+                    .setLabel("◀️ Précédent")
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(true);
 
                 const nextButton = new ButtonBuilder()
                     .setCustomId("avatarPageNext")
-                    .setLabel("Next ▶️")
+                    .setLabel("Suivant ▶️")
                     .setStyle(ButtonStyle.Secondary);
 
                 components.push(
@@ -237,11 +207,7 @@ export default async function avatarCommand(
 
         // Main action buttons
         components.push(
-            new ActionRowBuilder().addComponents(
-                createButton,
-                refreshButton,
-                helpButton
-            )
+            new ActionRowBuilder().addComponents(createButton, refreshButton)
         );
 
         // Performance logging
@@ -261,7 +227,8 @@ export default async function avatarCommand(
                 : [],
         };
 
-        await interaction.editReply(messageOptions);
+        if (isBack) await interaction.message.edit(messageOptions);
+        else await interaction.editReply(messageOptions);
     } catch (error) {
         console.error("Error in avatar command:", error);
 
@@ -274,11 +241,18 @@ export default async function avatarCommand(
         );
 
         try {
-            await interaction.editReply({
-                embeds: [errorEmbed],
-                components: [],
-                files: [],
-            });
+            if (isBack)
+                await interaction.message.edit({
+                    embeds: [errorEmbed],
+                    components: [],
+                    files: [],
+                });
+            else
+                await interaction.editReply({
+                    embeds: [errorEmbed],
+                    components: [],
+                    files: [],
+                });
         } catch (replyError) {
             console.error("Failed to send error message:", replyError);
         }

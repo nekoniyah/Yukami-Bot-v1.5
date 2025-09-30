@@ -11,6 +11,7 @@ import {
 } from "discord.js";
 import { Avatar } from "../../utils/models";
 import displays from "../../db/displays.json";
+import { createErrorEmbed } from "../../utils/embeds";
 
 /**
  * Avatar Creation System
@@ -50,18 +51,6 @@ const validators = {
      * @returns Validation result
      */
     name: (name: string): { valid: boolean; error?: string } => {
-        if (!name || name.trim().length === 0) {
-            return { valid: false, error: "Name cannot be empty" };
-        }
-        if (name.length > 32) {
-            return {
-                valid: false,
-                error: "Name must be 32 characters or less",
-            };
-        }
-        if (!/^[a-zA-Z0-9\s\-_]+$/.test(name)) {
-            return { valid: false, error: "Name contains invalid characters" };
-        }
         return { valid: true };
     },
 
@@ -77,16 +66,10 @@ const validators = {
         if (!bracket.includes("text")) {
             return {
                 valid: false,
-                error: "Bracket must contain the word 'text'",
+                error: "Le bracket doit obligatoirement contenir 'text",
             };
         }
-        const parts = bracket.split("text");
-        if (parts.length !== 2) {
-            return {
-                valid: false,
-                error: "Bracket must contain exactly one 'text' placeholder",
-            };
-        }
+
         return { valid: true };
     },
 
@@ -97,13 +80,13 @@ const validators = {
      */
     imageUrl: (url: string): { valid: boolean; error?: string } => {
         if (!url || url.trim().length === 0) {
-            return { valid: false, error: "Image URL cannot be empty" };
+            return { valid: false, error: "Le lien ne peut pas etre vide" };
         }
 
         try {
             new URL(url);
         } catch {
-            return { valid: false, error: "Invalid URL format" };
+            return { valid: false, error: "Format du lien invalide" };
         }
 
         const validExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
@@ -114,7 +97,7 @@ const validators = {
         if (!hasValidExtension) {
             return {
                 valid: false,
-                error: "URL must point to an image (.jpg, .png, .gif, .webp)",
+                error: "L'URL doit pointer vers une image (.jpg, .png, .gif, .webp)",
             };
         }
 
@@ -131,30 +114,30 @@ export default async function createAvatar(
 ): Promise<void> {
     const modal = new ModalBuilder()
         .setCustomId(`avatar_modal_${interaction.user.id}`)
-        .setTitle("🎭 Create New Avatar");
+        .setTitle("🎭 Créer un personnage");
 
     // Avatar name input
     const nameInput = new TextInputBuilder()
         .setCustomId("avatar_name")
-        .setLabel("Avatar Name")
+        .setLabel("Nom de l'avatar")
         .setStyle(TextInputStyle.Short)
-        .setPlaceholder("Enter your character's name (max 32 chars)")
+        .setPlaceholder("Entrez le nom de l'avatar (max 32 chars)")
         .setRequired(true)
         .setMaxLength(32);
 
     // Bracket format input with helpful placeholder
     const bracketInput = new TextInputBuilder()
         .setCustomId("avatar_bracket")
-        .setLabel("Message Bracket Format")
+        .setLabel("Format du bracket")
         .setStyle(TextInputStyle.Short)
-        .setPlaceholder('Example: "[text]" or "(text)" - must include "text"')
+        .setPlaceholder('Exemple: "[text]" ou "(text)" - doit inclure "text"')
         .setRequired(true)
         .setMaxLength(50);
 
     // Avatar image URL input
     const iconInput = new TextInputBuilder()
         .setCustomId("avatar_icon")
-        .setLabel("Avatar Image URL")
+        .setLabel("Lien vers l'image de l'avatar")
         .setStyle(TextInputStyle.Short)
         .setPlaceholder("https://example.com/avatar.png")
         .setRequired(true)
@@ -170,18 +153,15 @@ export default async function createAvatar(
     modal.addComponents(...rows);
 
     try {
-        await interaction.showModal(modal);
+        await interaction.showModal(modal, { withResponse: true });
     } catch (error) {
         console.error("Error showing avatar creation modal:", error);
 
-        const errorEmbed = new EmbedBuilder()
-            .setTitle("❌ Error")
-            .setDescription(
-                "Failed to open avatar creation form. Please try again."
-            )
-            .setColor("Red");
-
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        const errorEmbed = createErrorEmbed(
+            "Quelque chose s'est mal passé !",
+            "Une erreur s'est produite lors de la création de l'avatar."
+        );
+        await interaction.editReply({ embeds: [errorEmbed] });
     }
 }
 
@@ -210,7 +190,7 @@ export async function handleAvatarModalSubmission(
     if (!bracketValidation.valid)
         errors.push(`❌ Bracket: ${bracketValidation.error}`);
     if (!iconValidation.valid)
-        errors.push(`❌ Image URL: ${iconValidation.error}`);
+        errors.push(`❌ Lien de l'image : ${iconValidation.error}`);
 
     // Check for duplicate avatar name
     try {
@@ -222,25 +202,21 @@ export async function handleAvatarModalSubmission(
         });
 
         if (existingAvatar) {
-            errors.push("❌ You already have an avatar with this name");
+            errors.push("❌ Tu as déjà un avatar avec ce nom.");
         }
     } catch (error) {
         console.error("Error checking for existing avatar:", error);
-        errors.push("❌ Database error occurred");
+        errors.push("❌ La base de données a rencontré une erreur");
     }
 
     // If there are validation errors, show them
     if (errors.length > 0) {
-        const errorEmbed = new EmbedBuilder()
-            .setTitle("❌ Avatar Creation Failed")
-            .setDescription(errors.join("\n"))
-            .setColor("Red")
-            .setFooter({
-                text: "Please fix the errors and try again",
-            })
-            .setTimestamp();
+        const errorEmbed = createErrorEmbed(
+            "Des erreurs ont été rencontrées !",
+            errors.join("\n")
+        );
 
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        await interaction.editReply({ embeds: [errorEmbed] });
         return;
     }
 
@@ -254,13 +230,13 @@ export async function handleAvatarModalSubmission(
 
     // Create preview embed
     const previewEmbed = new EmbedBuilder()
-        .setTitle("🎭 Avatar Preview")
-        .setDescription("Review your avatar and select a species to continue.")
+        .setTitle("🎭 Prévisualisation")
+        .setDescription("Revoyez votre avatar et son espèce pour continuer.")
         .addFields([
             { name: "Name", value: name, inline: true },
             { name: "Bracket", value: bracket, inline: true },
             {
-                name: "Preview Message",
+                name: "Exemple de message",
                 value: bracket.replace("text", "Hello there!"),
                 inline: false,
             },
@@ -272,7 +248,7 @@ export async function handleAvatarModalSubmission(
             iconURL: interaction.user.displayAvatarURL(),
         })
         .setFooter({
-            text: `${process.env.NAME || "Yukami Bot"} • Avatar System`,
+            text: `${process.env.NAME || "Yukami Bot"} • Système d'avatar`,
             iconURL: interaction.client.user.displayAvatarURL(),
         })
         .setTimestamp();
@@ -282,14 +258,14 @@ export async function handleAvatarModalSubmission(
         ([key, displayName]) => ({
             label: displayName as string,
             value: key,
-            description: `Create a ${displayName} avatar`,
+            description: `Créer un avatar ${displayName}`,
             emoji: getSpeciesEmoji(key), // Helper function for species emojis
         })
     );
 
     const speciesSelectMenu = new StringSelectMenuBuilder()
         .setCustomId(`species_select_${interaction.user.id}`)
-        .setPlaceholder("🐾 Choose your avatar's species...")
+        .setPlaceholder("🐾 Choisissez sa race...")
         .addOptions(speciesOptions.slice(0, 25)); // Discord limit
 
     const actionRow =
@@ -298,20 +274,17 @@ export async function handleAvatarModalSubmission(
         );
 
     try {
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [previewEmbed],
             components: [actionRow],
-            ephemeral: true,
         });
     } catch (error) {
         console.error("Error showing species selection:", error);
 
-        const errorEmbed = new EmbedBuilder()
-            .setTitle("❌ Error")
-            .setDescription(
-                "Failed to show species selection. Please try again."
-            )
-            .setColor("Red");
+        const errorEmbed = createErrorEmbed(
+            "Quelque chose s'est mal passé !",
+            "Nous n'avons pas pu afficher la liste des espèces."
+        );
 
         await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
     }
@@ -331,14 +304,12 @@ export async function handleSpeciesSelection(
     const avatarData = avatarCreationCache.get(userId);
 
     if (!avatarData) {
-        const errorEmbed = new EmbedBuilder()
-            .setTitle("❌ Session Expired")
-            .setDescription(
-                "Your avatar creation session has expired. Please start over."
-            )
-            .setColor("Red");
+        const errorEmbed = createErrorEmbed(
+            "Quelque chose s'est mal passé !",
+            "Nous n'avons pas su selectionner une race."
+        );
 
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        await interaction.editReply({ embeds: [errorEmbed] });
         return;
     }
 
@@ -358,35 +329,35 @@ export async function handleSpeciesSelection(
 
         // Create success embed
         const successEmbed = new EmbedBuilder()
-            .setTitle("🎉 Avatar Created Successfully!")
+            .setTitle("🎉 Avatar créé!")
             .setDescription(
-                `**${avatarData.name}** has been created as a ${
+                `**${avatarData.name}** a été créé en tant que ${
                     displays[selectedSpecies as keyof typeof displays]
                 }!\n\n` +
-                    `Try using your avatar by typing:\n\`${avatarData.bracket.replace(
+                    `Essayez le en envoyant ce message:\n\`${avatarData.bracket.replace(
                         "text",
-                        "Hello everyone!"
+                        "Salut tout le monde!"
                     )}\``
             )
             .addFields([
-                { name: "Name", value: avatarData.name, inline: true },
+                { name: "Nom", value: avatarData.name, inline: true },
                 {
-                    name: "Species",
+                    name: "Race",
                     value: displays[
                         selectedSpecies as keyof typeof displays
                     ] as string,
                     inline: true,
                 },
-                { name: "Level", value: "1", inline: true },
+                { name: "Niveau", value: "1", inline: true },
             ])
             .setThumbnail(avatarData.iconUrl)
             .setColor("Green")
             .setFooter({
-                text: `Avatar ID: ${newAvatar.get("id")}`,
+                text: `ID de l'avatar: ${newAvatar.get("id")}`,
             })
             .setTimestamp();
 
-        await interaction.update({
+        await interaction.editReply({
             embeds: [successEmbed],
             components: [], // Remove the selection menu
         });
@@ -396,14 +367,12 @@ export async function handleSpeciesSelection(
         // Clean up cache even on error
         avatarCreationCache.delete(userId);
 
-        const errorEmbed = new EmbedBuilder()
-            .setTitle("❌ Creation Failed")
-            .setDescription(
-                "Failed to create your avatar. Please try again later."
-            )
-            .setColor("Red");
+        const errorEmbed = createErrorEmbed(
+            "Quelque chose s'est mal passé !",
+            "Nous n'avons pas pu créer votre avatar."
+        );
 
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        await interaction.editReply({ embeds: [errorEmbed] });
     }
 }
 

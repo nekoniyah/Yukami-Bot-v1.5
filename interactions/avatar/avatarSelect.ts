@@ -13,6 +13,7 @@ import stats from "../../db/stats.json";
 export default async function avatarSelect(
     interaction: StringSelectMenuInteraction
 ) {
+    interaction.deleteReply();
     try {
         const avatarId = interaction.values[0];
 
@@ -27,7 +28,7 @@ export default async function avatarSelect(
                 )
                 .setColor("Red");
 
-            await interaction.editReply({
+            await interaction.message.edit({
                 embeds: [errorEmbed],
                 components: [],
             });
@@ -41,7 +42,7 @@ export default async function avatarSelect(
                 .setDescription("You can only edit your own avatars.")
                 .setColor("Red");
 
-            await interaction.editReply({
+            await interaction.message.edit({
                 embeds: [errorEmbed],
                 components: [],
             });
@@ -180,7 +181,7 @@ export default async function avatarSelect(
             .setStyle(ButtonStyle.Danger);
 
         const backButton = new ButtonBuilder()
-            .setCustomId("back_to_avatars")
+            .setCustomId("back")
             .setLabel("◀️ Back")
             .setStyle(ButtonStyle.Primary);
 
@@ -204,7 +205,7 @@ export default async function avatarSelect(
                 .toJSON(),
         ];
 
-        await interaction.editReply({
+        await interaction.message.edit({
             embeds: [avatarEmbed],
             components,
             files: imageBuffer
@@ -221,7 +222,7 @@ export default async function avatarSelect(
             )
             .setColor("Red");
 
-        await interaction.editReply({
+        await interaction.message.edit({
             embeds: [errorEmbed],
             components: [],
         });

@@ -326,17 +326,17 @@ async function handleSlashCommand(
 ): Promise<void> {
     const { commandName } = interaction;
 
+    if (!interaction.deferred || !interaction.replied)
+        await interaction.deferReply();
+
     const handler = getInteractionHandler(commandName, "slash");
 
     if (!handler) {
         console.error(`❌ Command handler not found: ${commandName}`);
         const errorEmbed = createCommandNotFoundEmbed(commandName);
 
-        if (interaction.deferred) {
-            await interaction.editReply({ embeds: [errorEmbed] });
-        } else {
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-        }
+        await interaction.editReply({ embeds: [errorEmbed] });
+
         return;
     }
 
@@ -379,28 +379,24 @@ async function handleButtonInteraction(
 ): Promise<void> {
     const { customId } = interaction;
 
+    let btnFolderPath = path.join(process.cwd(), "interactions", "buttons");
+    let buttonFolder = await fs.readdir(btnFolderPath);
+    let filesWithoutExt = buttonFolder.map((f) => f.replace(".ts", ""));
+
+    let f = filesWithoutExt.find(
+        (f) => customId.startsWith(f) && customId !== f
+    );
+
+    if (f) {
+        let { default: handler } = await import(path.join(btnFolderPath, f));
+        await interaction.deferReply();
+        await handler(interaction);
+        return;
+    }
+
     const handler = getInteractionHandler(customId, "button");
 
     if (!handler) {
-        // Try legacy handling for specific patterns
-        if (customId === "createAvatar") {
-            const { default: createAvatar } = await import(
-                "../interactions/buttons/createAvatar"
-            );
-            await interaction.deferReply();
-            await createAvatar(interaction);
-            return;
-        }
-
-        if (customId.startsWith("avatarPage")) {
-            const { default: avatarHandler } = await import(
-                "../interactions/avatar/avatar"
-            );
-            await interaction.deferReply();
-            await avatarHandler(interaction);
-            return;
-        }
-
         console.error(`❌ Button handler not found: ${customId}`);
         const errorEmbed = createErrorEmbed(
             "Action Unavailable",
@@ -408,30 +404,18 @@ async function handleButtonInteraction(
         );
 
         try {
-            if (interaction.deferred) {
-                await interaction.editReply({ embeds: [errorEmbed] });
-            } else {
-                await interaction.reply({
-                    embeds: [errorEmbed],
-                    ephemeral: true,
-                });
-            }
+            await interaction.editReply({ embeds: [errorEmbed] });
         } catch (replyError) {
             console.error("Failed to send button error message:", replyError);
         }
-        return;
-    }
-
-    try {
-        if (!interaction.deferred && !interaction.replied) {
-            await interaction.deferUpdate();
+    } else {
+        try {
+            const avatars = await getUserAvatars(interaction.user.id);
+            await handler(interaction, avatars);
+        } catch (error) {
+            console.error(`❌ Error in button handler ${customId}:`, error);
+            await handleInteractionError(interaction, error as Error);
         }
-
-        const avatars = await getUserAvatars(interaction.user.id);
-        await handler(interaction, avatars);
-    } catch (error) {
-        console.error(`❌ Error in button handler ${customId}:`, error);
-        await handleInteractionError(interaction, error as Error);
     }
 }
 
@@ -443,9 +427,10 @@ async function handleSelectMenuInteraction(
 ): Promise<void> {
     const { customId } = interaction;
 
+    if (!interaction.deferred) await interaction.deferReply();
+
     // Handle special cases first
     if (customId.startsWith("species_select_")) {
-        await interaction.deferReply();
         await handleSpeciesSelection(
             interaction as StringSelectMenuInteraction
         );
@@ -462,7 +447,7 @@ async function handleSelectMenuInteraction(
         );
 
         try {
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.editReply({ embeds: [errorEmbed] });
         } catch (replyError) {
             console.error("Failed to send select error message:", replyError);
         }
@@ -470,10 +455,6 @@ async function handleSelectMenuInteraction(
     }
 
     try {
-        if (!interaction.deferred && !interaction.replied) {
-            await interaction.deferReply();
-        }
-
         const avatars = await getUserAvatars(interaction.user.id);
         await handler(interaction, avatars);
     } catch (error) {
@@ -488,6 +469,8 @@ async function handleSelectMenuInteraction(
 async function handleModalSubmission(
     interaction: ModalSubmitInteraction
 ): Promise<void> {
+    if (!interaction.deferred || !interaction.replied)
+        await interaction.deferReply();
     const { customId } = interaction;
 
     // Handle special cases first
@@ -506,7 +489,7 @@ async function handleModalSubmission(
         );
 
         try {
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.editReply({ embeds: [errorEmbed] });
         } catch (replyError) {
             console.error("Failed to send modal error message:", replyError);
         }
@@ -591,11 +574,7 @@ async function handleInteractionError(
     );
 
     try {
-        if (interaction.deferred) {
-            await interaction.editReply({ embeds: [errorEmbed] });
-        } else if (!interaction.replied) {
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-        }
+        await interaction.editReply({ embeds: [errorEmbed] });
     } catch (replyError) {
         console.error("Failed to send error message:", replyError);
     }
@@ -613,7 +592,7 @@ export async function reloadInteractionHandlers(): Promise<void> {
 /**
  * Get handler statistics (for monitoring)
  */
-export function getHandlerStats(): any {
+export function getHandlerStats() {
     return {
         totalHandlers: interactionHandlers.size,
         averageLoadTime:

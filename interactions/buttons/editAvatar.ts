@@ -9,6 +9,7 @@ import { Avatar } from "../../utils/models";
 import locale from "../../locales/locale";
 
 export default async function (interaction: ButtonInteraction) {
+    await interaction.deleteReply();
     let message = await interaction.message.fetch(true);
 
     if (interaction.user.id !== message.interactionMetadata!.user.id) {
@@ -17,8 +18,6 @@ export default async function (interaction: ButtonInteraction) {
         });
         return;
     }
-
-    await interaction.deleteReply();
 
     const name = message.embeds[0].title!;
     const ownedOne = await Avatar.findOne({
