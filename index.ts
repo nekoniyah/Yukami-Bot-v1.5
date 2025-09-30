@@ -35,6 +35,7 @@ const client = new Client({
         Partials.Reaction,
         Partials.GuildMember,
         Partials.User,
+        Partials.ThreadMember,
     ],
     failIfNotExists: false,
     allowedMentions: {
@@ -44,90 +45,34 @@ const client = new Client({
 });
 
 /**
- * Recursively load TypeScript files from directories
- */
-async function loadFilesRecursively(dirPath: string): Promise<string[]> {
-    const files: string[] = [];
-
-    try {
-        const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-        for (const entry of entries) {
-            const fullPath = path.join(dirPath, entry.name);
-
-            if (entry.isDirectory()) {
-                // Skip hidden directories, node_modules, and build directories
-                if (
-                    !entry.name.startsWith(".") &&
-                    entry.name !== "node_modules" &&
-                    entry.name !== "dist" &&
-                    entry.name !== "build"
-                ) {
-                    const subFiles = await loadFilesRecursively(fullPath);
-                    files.push(...subFiles);
-                }
-            } else if (entry.isFile() && entry.name.endsWith(".ts")) {
-                files.push(fullPath);
-            }
-        }
-    } catch (error) {
-        console.error(`❌ Failed to read directory ${dirPath}:`, error);
-    }
-
-    return files;
-}
-
-/**
  * Enhanced event loader with folder support and error handling
  */
-async function loadEvents(): Promise<void> {
-    const eventPath = path.join(__dirname, "events");
+async function loadEvents(baseFolderName?: string): Promise<void> {
+    const eventPath = baseFolderName
+        ? path.join(__dirname, "events", baseFolderName)
+        : path.join(__dirname, "events");
 
-    try {
-        const eventFiles = await loadFilesRecursively(eventPath);
+    let files = await fs.readdir(eventPath, { withFileTypes: true });
 
-        if (eventFiles.length === 0) {
-            console.warn("⚠️ No event files found");
-            return;
-        }
-
-        console.log(`📂 Loading ${eventFiles.length} event handlers...`);
-
-        let loadedCount = 0;
-        for (const filePath of eventFiles) {
-            const eventName = path.basename(filePath, ".ts");
-
-            try {
-                const { default: eventHandler } = await import(filePath);
-
-                if (!eventHandler) {
-                    console.warn(`⚠️ No default export in ${eventName}`);
-                    continue;
-                }
-
-                // Wrap event handler with error handling
-                client.on(eventName, async (...args) => {
-                    try {
-                        await eventHandler(...args);
-                    } catch (error) {
-                        console.error(`❌ Error in ${eventName} event:`, error);
-                    }
-                });
-
-                const relativePath = path.relative(eventPath, filePath);
-                console.log(`✅ Loaded event: ${eventName} (${relativePath})`);
-                loadedCount++;
-            } catch (error) {
-                console.error(`❌ Failed to load event ${eventName}:`, error);
+    for (let f of files) {
+        if (f.isDirectory()) {
+            console.log(`📁 Scanning directory: ${f.name}`);
+            await loadEvents(f.name);
+        } else {
+            if (baseFolderName) {
+                let { default: ev } = await import(
+                    path.join(eventPath, f.name)
+                );
+                client.on(baseFolderName, ev);
+            } else {
+                let { default: ev } = await import(
+                    path.join(eventPath, f.name)
+                );
+                client.on(f.name.replace(".ts", ""), ev);
             }
-        }
 
-        console.log(
-            `🎉 Successfully loaded ${loadedCount}/${eventFiles.length} events`
-        );
-    } catch (error) {
-        console.error("❌ Failed to read events directory:", error);
-        process.exit(1);
+            console.log(`✅ Loaded event: ${f.name}`);
+        }
     }
 }
 
