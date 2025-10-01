@@ -1,33 +1,29 @@
 import { ButtonInteraction, EmbedBuilder } from "discord.js";
 import { Avatar } from "../../utils/models";
-import locale from "../../locales/locale";
+import { type Handler } from "../../events/interactionCreate";
 
-export default async function (
-    interaction: ButtonInteraction,
-    avatars: Avatar[]
-) {
+export default (async function (interaction, avatars, callback) {
     let message = await interaction.message.fetch(true);
 
     let avatar = avatars.find(
         (a) =>
-            a.get("name") === message.embeds[0].title?.replace("Editing ", "")
+            a.get("name") ===
+            message.embeds[0].title?.replace("Modification ", "")
     );
-    const loc = await locale(interaction.locale ?? "en");
 
     let embed = EmbedBuilder.from(message.embeds[0])
-        .setDescription(loc.ui.avatars.create_prompt_image)
+        .setDescription("Envoies un nouvel avatar")
         .setColor("#5865F2")
         .setAuthor({
             name: interaction.user.tag,
             iconURL: interaction.user.displayAvatarURL(),
         })
         .setFooter({
-            text: process.env.NAME + " • Edit Avatar",
+            text: process.env.NAME + " • Modifier l'avatar",
             iconURL: interaction.client.user?.displayAvatarURL(),
         });
 
-    message.edit({ embeds: [embed] });
-    interaction.deleteReply();
+    callback({ embeds: [embed] });
 
     let msg = (
         await message.channel.awaitMessages({
@@ -61,5 +57,5 @@ export default async function (
 
     await msg.delete();
 
-    await message.edit({ embeds: [embed] });
-}
+    callback({ embeds: [embed] });
+} as Handler<ButtonInteraction>);

@@ -4,10 +4,9 @@ import {
     ChatInputCommandInteraction,
 } from "discord.js";
 import { createSuccessEmbed } from "../../utils/embeds";
+import { Handler } from "../../events/interactionCreate";
 
-export default async function channelCommand(
-    interaction: ChatInputCommandInteraction
-) {
+export default (async function channelCommand(interaction, avatars, callback) {
     let subcommand = interaction.options.getSubcommand();
     let completeNameFormat = "◦•●◉✿ $1 • $2 ✿◉●•◦";
     let simpleNameFormat = "◦•●◉✿ $1 ✿◉●•◦";
@@ -42,7 +41,7 @@ export default async function channelCommand(
                 ],
             });
 
-            interaction[interaction.deferred ? "editReply" : "reply"]({
+            callback({
                 embeds: [
                     createSuccessEmbed(
                         "Salon créé",
@@ -102,7 +101,7 @@ export default async function channelCommand(
                 }
             }
 
-            await interaction[interaction.deferred ? "editReply" : "reply"]({
+            await callback({
                 embeds: [
                     createSuccessEmbed(
                         "Salon mis à jour",
@@ -120,4 +119,4 @@ export default async function channelCommand(
 
             break;
     }
-}
+} as Handler<ChatInputCommandInteraction>);

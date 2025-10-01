@@ -1,33 +1,29 @@
 import { ButtonInteraction, EmbedBuilder } from "discord.js";
 import { Avatar } from "../../utils/models";
-import locale from "../../locales/locale";
+import { Handler } from "../../events/interactionCreate";
 
-export default async function (
-    interaction: ButtonInteraction,
-    avatars: Avatar[]
-) {
+export default (async function (interaction, avatars, callback) {
     let message = await interaction.message.fetch(true);
 
     let avatar = avatars.find(
         (a) =>
-            a.get("name") === message.embeds[0].title?.replace("Editing ", "")
+            a.get("name") ===
+            message.embeds[0].title?.replace("Modification ", "")
     );
-    const loc = await locale(interaction.locale ?? "en");
 
     let embed = EmbedBuilder.from(message.embeds[0])
-        .setDescription(loc.ui.avatars.create_prompt_name)
+        .setDescription("Envoies un nouveau nom")
         .setColor("#5865F2")
         .setAuthor({
             name: interaction.user.tag,
             iconURL: interaction.user.displayAvatarURL(),
         })
         .setFooter({
-            text: (process.env.NAME ?? "Luo") + " • Edit Avatar",
+            text: process.env.NAME + " • Modifier l'avatar",
             iconURL: interaction.client.user?.displayAvatarURL(),
         });
 
-    message.edit({ embeds: [embed] });
-    interaction.deleteReply();
+    callback({ embeds: [embed] });
 
     let msg = (
         await message.channel.awaitMessages({
@@ -49,7 +45,7 @@ export default async function (
         .setDescription(null)
         .setFields(
             {
-                name: "Name",
+                name: "Nom",
                 value: msg.content,
             },
             {
@@ -57,9 +53,8 @@ export default async function (
                 value: avatar?.get("bracket") as string,
             }
         )
-        .setTitle(loc.ui.avatars.editing_title.replace("%s", msg.content));
+        .setTitle("Modifié en " + msg.content);
 
     await msg.delete();
-
-    await message.edit({ embeds: [embed] });
-}
+    await callback({ embeds: [embed] });
+} as Handler<ButtonInteraction>);

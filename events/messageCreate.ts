@@ -1,7 +1,6 @@
 import { TextChannel, Message, Webhook } from "discord.js";
 import { Avatar } from "../utils/models";
 import eventBuilder from "../utils/eventBuilder";
-import { MonsterEncounterSystem } from "../utils/monsters";
 
 /**
  * Message Create Event Handler
@@ -174,8 +173,6 @@ export default eventBuilder<"messageCreate">(async (message: Message) => {
     // Ensure we're in a text channel
     const channel = message.channel as TextChannel;
     if (!channel.isTextBased()) return;
-
-    await MonsterEncounterSystem.handleMessageSpawn(message);
 
     try {
         // Get user's avatars from cache

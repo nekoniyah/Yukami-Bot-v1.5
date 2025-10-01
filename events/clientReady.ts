@@ -317,7 +317,7 @@ export default eventBuilder<"clientReady">(async (client) => {
 
         const initTime = Date.now() - startTime;
         console.log(`\n🎊 Bot initialization completed in ${initTime}ms`);
-        console.log("🎮 Yukami Bot is now fully operational!");
+        console.log(`🎮 ${process.env.NAME} is now fully operational!`);
     } catch (error) {
         console.error("❌ Error during bot initialization:", error);
 

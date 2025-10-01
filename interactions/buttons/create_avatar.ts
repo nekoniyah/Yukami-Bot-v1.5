@@ -5,41 +5,13 @@ import {
     TextInputBuilder,
     TextInputStyle,
     StringSelectMenuBuilder,
-    EmbedBuilder,
     ModalSubmitInteraction,
     StringSelectMenuInteraction,
 } from "discord.js";
 import { Avatar } from "../../utils/models";
 import displays from "../../db/displays.json";
-import { createErrorEmbed } from "../../utils/embeds";
-
-/**
- * Avatar Creation System
- *
- * Modern implementation using Discord modals instead of message collectors
- * for better UX, security, and maintainability.
- */
-
-// Cache for temporary avatar data during creation process
-const avatarCreationCache = new Map<
-    string,
-    {
-        name: string;
-        bracket: string;
-        iconUrl: string;
-        expiresAt: number;
-    }
->();
-
-// Clean up expired cache entries every 5 minutes
-setInterval(() => {
-    const now = Date.now();
-    for (const [userId, data] of avatarCreationCache.entries()) {
-        if (data.expiresAt < now) {
-            avatarCreationCache.delete(userId);
-        }
-    }
-}, 5 * 60 * 1000);
+import { createErrorEmbed, YukamiEmbed } from "../../utils/embeds";
+import { type Handler } from "../../events/interactionCreate";
 
 /**
  * Validation functions
@@ -109,9 +81,7 @@ const validators = {
  * Create and show the avatar creation modal
  * @param interaction - The button interaction that triggered avatar creation
  */
-export default async function createAvatar(
-    interaction: ButtonInteraction
-): Promise<void> {
+export default (async function createAvatar(interaction, avatars, callback) {
     const modal = new ModalBuilder()
         .setCustomId(`avatar_modal_${interaction.user.id}`)
         .setTitle("🎭 Créer un personnage");
@@ -161,9 +131,10 @@ export default async function createAvatar(
             "Quelque chose s'est mal passé !",
             "Une erreur s'est produite lors de la création de l'avatar."
         );
-        await interaction.editReply({ embeds: [errorEmbed] });
+
+        callback({ embeds: [errorEmbed] });
     }
-}
+} as Handler<ButtonInteraction>);
 
 /**
  * Handle modal submission for avatar creation
@@ -171,7 +142,7 @@ export default async function createAvatar(
  */
 export async function handleAvatarModalSubmission(
     interaction: ModalSubmitInteraction
-): Promise<void> {
+) {
     // Extract form data
     const name = interaction.fields.getTextInputValue("avatar_name").trim();
     const bracket = interaction.fields
@@ -220,20 +191,18 @@ export async function handleAvatarModalSubmission(
         return;
     }
 
-    // Store temporary data in cache
-    avatarCreationCache.set(interaction.user.id, {
-        name,
-        bracket,
-        iconUrl,
-        expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
-    });
-
     // Create preview embed
-    const previewEmbed = new EmbedBuilder()
+    const previewEmbed = new YukamiEmbed()
+        .setBotFooter()
+        .setTimestamp()
+        .setAuthor({
+            name: interaction.user.tag,
+            iconURL: interaction.user.displayAvatarURL(),
+        })
         .setTitle("🎭 Prévisualisation")
-        .setDescription("Revoyez votre avatar et son espèce pour continuer.")
+        .setDescription("Attributez une race pour continuer.")
         .addFields([
-            { name: "Name", value: name, inline: true },
+            { name: "Nom", value: name, inline: true },
             { name: "Bracket", value: bracket, inline: true },
             {
                 name: "Exemple de message",
@@ -241,17 +210,7 @@ export async function handleAvatarModalSubmission(
                 inline: false,
             },
         ])
-        .setThumbnail(iconUrl)
-        .setColor("#5865F2")
-        .setAuthor({
-            name: interaction.user.tag,
-            iconURL: interaction.user.displayAvatarURL(),
-        })
-        .setFooter({
-            text: `${process.env.NAME || "Yukami Bot"} • Système d'avatar`,
-            iconURL: interaction.client.user.displayAvatarURL(),
-        })
-        .setTimestamp();
+        .setThumbnail(iconUrl);
 
     // Create species selection menu
     const speciesOptions = Object.entries(displays).map(
@@ -259,7 +218,6 @@ export async function handleAvatarModalSubmission(
             label: displayName as string,
             value: key,
             description: `Créer un avatar ${displayName}`,
-            emoji: getSpeciesEmoji(key), // Helper function for species emojis
         })
     );
 
@@ -288,110 +246,4 @@ export async function handleAvatarModalSubmission(
 
         await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
     }
-}
-
-/**
- * Handle species selection for avatar creation
- * @param interaction - String select menu interaction
- */
-export async function handleSpeciesSelection(
-    interaction: StringSelectMenuInteraction
-): Promise<void> {
-    const userId = interaction.user.id;
-    const selectedSpecies = interaction.values[0];
-
-    // Get cached avatar data
-    const avatarData = avatarCreationCache.get(userId);
-
-    if (!avatarData) {
-        const errorEmbed = createErrorEmbed(
-            "Quelque chose s'est mal passé !",
-            "Nous n'avons pas su selectionner une race."
-        );
-
-        await interaction.editReply({ embeds: [errorEmbed] });
-        return;
-    }
-
-    try {
-        // Create the avatar in database
-        const newAvatar = await Avatar.create({
-            userId: userId,
-            name: avatarData.name,
-            bracket: avatarData.bracket,
-            icon: avatarData.iconUrl,
-            species: selectedSpecies,
-            level: 1,
-        });
-
-        // Clean up cache
-        avatarCreationCache.delete(userId);
-
-        // Create success embed
-        const successEmbed = new EmbedBuilder()
-            .setTitle("🎉 Avatar créé!")
-            .setDescription(
-                `**${avatarData.name}** a été créé en tant que ${
-                    displays[selectedSpecies as keyof typeof displays]
-                }!\n\n` +
-                    `Essayez le en envoyant ce message:\n\`${avatarData.bracket.replace(
-                        "text",
-                        "Salut tout le monde!"
-                    )}\``
-            )
-            .addFields([
-                { name: "Nom", value: avatarData.name, inline: true },
-                {
-                    name: "Race",
-                    value: displays[
-                        selectedSpecies as keyof typeof displays
-                    ] as string,
-                    inline: true,
-                },
-                { name: "Niveau", value: "1", inline: true },
-            ])
-            .setThumbnail(avatarData.iconUrl)
-            .setColor("Green")
-            .setFooter({
-                text: `ID de l'avatar: ${newAvatar.get("id")}`,
-            })
-            .setTimestamp();
-
-        await interaction.editReply({
-            embeds: [successEmbed],
-            components: [], // Remove the selection menu
-        });
-    } catch (error) {
-        console.error("Error creating avatar:", error);
-
-        // Clean up cache even on error
-        avatarCreationCache.delete(userId);
-
-        const errorEmbed = createErrorEmbed(
-            "Quelque chose s'est mal passé !",
-            "Nous n'avons pas pu créer votre avatar."
-        );
-
-        await interaction.editReply({ embeds: [errorEmbed] });
-    }
-}
-
-/**
- * Get emoji for species (helper function)
- * @param species - Species key
- * @returns Appropriate emoji
- */
-function getSpeciesEmoji(species: string): string {
-    const emojiMap: Record<string, string> = {
-        human: "👤",
-        elf: "🧝",
-        dwarf: "⚒️",
-        cat: "🐱",
-        dog: "🐕",
-        wolf: "🐺",
-        dragon: "🐉",
-        // Add more as needed
-    };
-
-    return emojiMap[species] || "✨";
 }

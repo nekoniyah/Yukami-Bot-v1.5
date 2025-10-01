@@ -86,8 +86,9 @@ export class YukamiEmbed extends EmbedBuilder {
      */
     setBotFooter(text?: string): this {
         return this.setFooter({
-            text: text || "Yukami Bot • Role-playing made simple",
-            iconURL: "https://i.imgur.com/placeholder-bot-icon.png", // Replace with actual bot icon
+            text: text || `${process.env.NAME} • Roleplay textuel immersif`,
+            iconURL:
+                "https://cdn.discordapp.com/avatars/1419796413243723869/78fbb7af41b34e455a12b91575ee4fd9.png", // Replace with actual bot icon
         });
     }
 
@@ -185,8 +186,11 @@ export function createErrorEmbed(
     const embed = new YukamiEmbed()
         .asError()
         .setTitle(`${EMBED_EMOJIS.ERROR} ${title}`)
-        .setDescription(description || "An unexpected error occurred.")
-        .setBotFooter("If this persists, please contact support");
+        .setDescription(
+            description ||
+                "Si cela persiste, veuillez contacter un administrateur."
+        )
+        .setBotFooter();
 
     if (details) {
         embed.addFormattedField("Details", `\`\`\`${details}\`\`\``);
@@ -226,11 +230,13 @@ export function createInfoEmbed(
 /**
  * Loading message embed
  */
-export function createLoadingEmbed(action: string = "Processing"): YukamiEmbed {
+export function createLoadingEmbed(
+    action: string = "Prise en charge"
+): YukamiEmbed {
     return new YukamiEmbed()
         .asInfo()
         .setTitle(`${EMBED_EMOJIS.LOADING} ${action}...`)
-        .setDescription("Please wait while I process your request.")
+        .setDescription("Attendez un instant...")
         .setBotFooter();
 }
 
@@ -245,10 +251,10 @@ export function createAvatarEmbed(avatar: any, user: User): YukamiEmbed {
     const embed = new YukamiEmbed()
         .asAvatar()
         .setTitle(`${EMBED_EMOJIS.AVATAR} ${avatar.name}`)
-        .setUserAuthor(user, `${user.displayName}'s Avatar`)
+        .setUserAuthor(user, `Avatar de ${user.displayName}`)
         .setThumbnail(avatar.icon)
-        .addFormattedField("Species", avatar.species, true)
-        .addFormattedField("Level", avatar.level.toString(), true)
+        .addFormattedField("Race", avatar.species, true)
+        .addFormattedField("Niveau", avatar.level.toString(), true)
         .addFormattedField("Bracket", `\`${avatar.bracket}\``, true)
         .setBotFooter();
 
@@ -413,9 +419,9 @@ export function createHelpEmbed(
  */
 export function createCommandNotFoundEmbed(commandName: string): YukamiEmbed {
     return createErrorEmbed(
-        "Command Not Found",
-        `The command \`/${commandName}\` is not available.`,
-        "Use `/help` to see available commands"
+        "Commande non trouvée",
+        `La commande \`/${commandName}\` n'est pas disponible`,
+        "Tapez `/help` pour voir les commandes disponibles."
     );
 }
 
@@ -426,10 +432,10 @@ export function createPermissionDeniedEmbed(
     requiredPermission?: string
 ): YukamiEmbed {
     const description = requiredPermission
-        ? `You need the **${requiredPermission}** permission to use this command.`
-        : "You don't have permission to use this command.";
+        ? `Vous devez avoir la permission **${requiredPermission}** pour utiliser cette commande.`
+        : "Vous n'avez pas la permission requise pour utiliser cette commande.";
 
-    return createErrorEmbed("Permission Denied", description);
+    return createErrorEmbed("Permission refusée", description);
 }
 
 /**
@@ -439,11 +445,11 @@ export function createCooldownEmbed(timeLeft: number): YukamiEmbed {
     const timeString =
         timeLeft > 60
             ? `${Math.ceil(timeLeft / 60)} minute(s)`
-            : `${timeLeft} second(s)`;
+            : `${timeLeft} seconde(s)`;
 
     return createErrorEmbed(
-        "Command Cooldown",
-        `Please wait **${timeString}** before using this command again.`
+        "Cooldown en cours",
+        `Attendez **${timeString}** avant de réutiliser cette commande.`
     );
 }
 
@@ -452,8 +458,8 @@ export function createCooldownEmbed(timeLeft: number): YukamiEmbed {
  */
 export function createMaintenanceEmbed(): YukamiEmbed {
     return createWarningEmbed(
-        "Under Maintenance",
-        "This feature is temporarily unavailable due to maintenance. Please try again later."
+        "Maintenance en cours",
+        "Le bot est en cours de maintenance. Veuillez réessayer plus tard."
     );
 }
 
@@ -560,7 +566,7 @@ export function createReactionRoleEmbed(
             )
             .join("\n");
 
-        embed.addFormattedField("Available Roles", roleList);
+        embed.addFormattedField("Rôles disponibles", roleList);
     }
 
     return embed;
@@ -576,7 +582,7 @@ export function createReactionRoleEmbed(
 export function createUserStatsEmbed(user: User, stats: any): YukamiEmbed {
     const embed = new YukamiEmbed()
         .asInfo()
-        .setTitle(`${EMBED_EMOJIS.STATS} ${user.displayName}'s Stats`)
+        .setTitle(`${EMBED_EMOJIS.STATS} Stats de ${user.displayName}`)
         .setUserAuthor(user)
         .setThumbnail(user.displayAvatarURL({ extension: "png", size: 128 }))
         .setBotFooter();
@@ -584,7 +590,7 @@ export function createUserStatsEmbed(user: User, stats: any): YukamiEmbed {
     // Level and XP
     if (stats.level !== undefined) {
         embed.addFormattedField(
-            "Level",
+            "Niveau",
             `${EMBED_EMOJIS.LEVEL_UP} ${stats.level}`,
             true
         );
@@ -592,7 +598,7 @@ export function createUserStatsEmbed(user: User, stats: any): YukamiEmbed {
 
     if (stats.xp !== undefined) {
         embed.addFormattedField(
-            "Total XP",
+            "XP Total",
             `${EMBED_EMOJIS.XP} ${stats.xp.toLocaleString()}`,
             true
         );
@@ -605,13 +611,13 @@ export function createUserStatsEmbed(user: User, stats: any): YukamiEmbed {
             stats.levelXP || 0,
             stats.nextLevelXP
         );
-        embed.addFormattedField("Progress to Next Level", progressBar);
+        embed.addFormattedField("Progression au prochain niveau", progressBar);
     }
 
     // Additional stats
     if (stats.messagesCount) {
         embed.addFormattedField(
-            "Messages Sent",
+            "Messages envoyés",
             stats.messagesCount.toLocaleString(),
             true
         );
@@ -619,7 +625,7 @@ export function createUserStatsEmbed(user: User, stats: any): YukamiEmbed {
 
     if (stats.avatarsCount) {
         embed.addFormattedField(
-            "Avatars Created",
+            "Avatar créé",
             `${EMBED_EMOJIS.AVATAR} ${stats.avatarsCount}`,
             true
         );
@@ -641,10 +647,12 @@ export class EmbedIntegrationExamples {
      */
     static avatarCommandResponse(avatar: any, user: User): YukamiEmbed {
         return createAvatarEmbed(avatar, user)
-            .setDescription(`**${avatar.name}** is ready for adventure!`)
+            .setDescription(
+                `**${avatar.name}** est prêt pour une nouvelle aventure !`
+            )
             .addFormattedField(
-                "Current Location",
-                avatar.location || "Unknown",
+                "Lieu actuel",
+                avatar.location || "Inconnu",
                 true
             );
     }
@@ -658,7 +666,7 @@ export class EmbedIntegrationExamples {
     ): YukamiEmbed {
         return createPingEmbed(botLatency, apiLatency).addFormattedField(
             "Status",
-            "🟢 Online",
+            "🟢 En Ligne",
             true
         );
     }
@@ -672,13 +680,9 @@ export class EmbedIntegrationExamples {
         customMessage?: string
     ): YukamiEmbed {
         return createWelcomeEmbed(user, guild.name, customMessage)
+            .addFormattedField("Membres", `${guild.memberCount} membres`, true)
             .addFormattedField(
-                "Member Count",
-                `${guild.memberCount} members`,
-                true
-            )
-            .addFormattedField(
-                "Account Created",
+                "Compte créé",
                 formatTimestamp(user.createdAt, "D"),
                 true
             );
@@ -702,8 +706,8 @@ export class EmbedIntegrationExamples {
         }
 
         return createErrorEmbed(
-            "Command Failed",
-            "Something went wrong while executing this command.",
+            "Impossible d'executer la commande",
+            "Une erreur s'est produite lors de l'execution de la commande.",
             process.env.NODE_ENV === "production" ? undefined : error.message
         );
     }

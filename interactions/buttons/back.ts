@@ -1,18 +1,16 @@
 import { ButtonInteraction } from "discord.js";
-import avatarCommand from "../avatar/avatar";
-import { clearAvatarCache } from "../avatar/avatar";
+import avatarCommand from "../slashs/avatar";
+import { type Handler } from "../../events/interactionCreate";
 
-export default async function backToAvatars(interaction: ButtonInteraction) {
-    if (!interaction.deferred && !interaction.replied)
-        await interaction.deferReply();
-    interaction.deleteReply();
+export default (async function backToAvatars(
+    interaction: ButtonInteraction,
+    avatars,
+    callback
+) {
     try {
-        // Clear cache to ensure fresh data
-        clearAvatarCache(interaction.user.id);
-
         // Use the main avatar command
-        await avatarCommand(interaction);
+        await avatarCommand(interaction, avatars, callback);
     } catch (error) {
         console.error("Error in back navigation:", error);
     }
-}
+} as Handler<ButtonInteraction>);

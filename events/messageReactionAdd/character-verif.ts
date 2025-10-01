@@ -49,11 +49,11 @@ export default eventBuilder<"messageReactionAdd">(async (reaction, user) => {
         await originalMember.roles.add(firstSheetRole);
     }
 
-    if (originalMember.roles.cache.has(firstSheetRoleId) && secondSheetRole) {
-        await originalMember.roles.add(secondSheetRole);
-    }
+    // if (originalMember.roles.cache.has(firstSheetRoleId) && secondSheetRole) {
+    //     await originalMember.roles.add(secondSheetRole);
+    // }
 
-    if (originalMember.roles.cache.has(secondSheetRoleId) && thirdSheetRole) {
-        await originalMember.roles.add(thirdSheetRole);
-    }
+    // if (originalMember.roles.cache.has(secondSheetRoleId) && thirdSheetRole) {
+    //     await originalMember.roles.add(thirdSheetRole);
+    // }
 });

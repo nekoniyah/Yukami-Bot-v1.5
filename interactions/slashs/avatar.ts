@@ -7,7 +7,6 @@ import {
     StringSelectMenuBuilder,
 } from "discord.js";
 import { Avatar } from "../../utils/models";
-import locale from "../../locales/locale";
 import { renderComponentToPng } from "../../utils/render";
 import {
     YukamiEmbed,
@@ -16,6 +15,7 @@ import {
     EMBED_EMOJIS,
     validateEmbed,
 } from "../../utils/embeds";
+import { Handler } from "../../events/interactionCreate";
 
 // Cache for avatar data to reduce database queries
 const avatarCache = new Map<string, { data: Avatar[]; expires: number }>();
@@ -53,50 +53,31 @@ export function clearAvatarCache(userId: string): void {
 /**
  * Enhanced avatar management interface using new embed utility
  */
-export default async function avatarCommand(
-    interaction: ChatInputCommandInteraction | ButtonInteraction
-) {
-    const isBack = interaction.isButton();
-    const avatars = await getUserAvatars(interaction.user.id);
-
+export default (async function avatarCommand(interaction, avatars, callback) {
     try {
         const startTime = Date.now();
-        const loc = await locale(interaction.locale ?? "en");
 
         // Show loading message for better UX
         const loadingEmbed = createLoadingEmbed("Chargement des avatars");
 
-        if (!isBack) {
-            await interaction.editReply({ embeds: [loadingEmbed], files: [] });
-        } else {
-            await interaction.message.edit({
-                embeds: [loadingEmbed],
-                files: [],
-            });
-        }
+        await callback({
+            embeds: [loadingEmbed],
+            files: [],
+        });
 
         // Create main embed with new utility
         const mainEmbed = new YukamiEmbed()
-            .setTitle(`${EMBED_EMOJIS.AVATAR} ${loc.ui.avatars.title}`)
+            .setTitle(`${EMBED_EMOJIS.AVATAR} Avatars`)
             .setUserAuthor(
                 interaction.user,
-                `${interaction.user.displayName}'s Avatars`
+                `Avatars de ${interaction.user.displayName}`
             )
             .setThumbnail(interaction.user.displayAvatarURL({ size: 256 }))
-            .setBotFooter("Avatar Management System");
+            .setBotFooter("Système de gestion des avatars");
 
         let imageBuffer: Buffer | null = null;
 
         if (avatars.length > 0) {
-            // Enhanced description with stats
-            const totalLevels = avatars.reduce(
-                (sum, avatar) => sum + (avatar.get("level") as number),
-                0
-            );
-            const highestLevel = Math.max(
-                ...avatars.map((avatar) => avatar.get("level") as number)
-            );
-
             mainEmbed.setDescription(
                 `Tu as **${avatars.length}** avatar${
                     avatars.length !== 1 ? "s" : ""
@@ -109,9 +90,7 @@ export default async function avatarCommand(
                     .slice(0, 3)
                     .map(
                         (avatar) =>
-                            `${getSpeciesEmoji(
-                                avatar.get("species") as string
-                            )} **${avatar.get("name")}** - Niveau ${avatar.get(
+                            `**${avatar.get("name")}** - Niveau ${avatar.get(
                                 "level"
                             )}`
                     )
@@ -150,24 +129,12 @@ export default async function avatarCommand(
             throw new Error("Embed validation failed");
         }
 
-        // Enhanced button components
-        const createButton = new ButtonBuilder()
-            .setCustomId("createAvatar")
-            .setLabel(`✨ Créer un avatar`)
-            .setStyle(ButtonStyle.Success)
-            .setEmoji("🎭");
-
-        const refreshButton = new ButtonBuilder()
-            .setCustomId("refreshAvatars")
-            .setLabel("🔄 Rafraîchir")
-            .setStyle(ButtonStyle.Secondary);
-
         // Enhanced select menu for avatars
         const components: any[] = [];
 
         if (avatars.length > 0) {
             const avatarSelectMenu = new StringSelectMenuBuilder()
-                .setCustomId("avatarSelect")
+                .setCustomId("avatar")
                 .setPlaceholder("🎭 Selectionnez un avatar à gérer...")
                 .addOptions(
                     avatars.slice(0, 25).map((avatar) => ({
@@ -178,7 +145,6 @@ export default async function avatarCommand(
                         description: `${avatar.get(
                             "species"
                         )} • Clickez pour voir ou editer les détails`,
-                        emoji: getSpeciesEmoji(avatar.get("species") as string),
                     }))
                 );
 
@@ -205,11 +171,6 @@ export default async function avatarCommand(
             }
         }
 
-        // Main action buttons
-        components.push(
-            new ActionRowBuilder().addComponents(createButton, refreshButton)
-        );
-
         // Performance logging
         const responseTime = Date.now() - startTime;
         if (responseTime > 1000) {
@@ -227,54 +188,26 @@ export default async function avatarCommand(
                 : [],
         };
 
-        if (isBack) await interaction.message.edit(messageOptions);
-        else await interaction.editReply(messageOptions);
+        callback(messageOptions);
     } catch (error) {
         console.error("Error in avatar command:", error);
 
         const errorEmbed = createErrorEmbed(
-            "Avatar Command Failed",
-            "Failed to load your avatars. Please try again.",
+            "Commande avatar échouée",
+            "Impossible de charger les avatars. Réessayez plus tard.",
             process.env.NODE_ENV === "production"
                 ? undefined
                 : (error as Error).message
         );
 
         try {
-            if (isBack)
-                await interaction.message.edit({
-                    embeds: [errorEmbed],
-                    components: [],
-                    files: [],
-                });
-            else
-                await interaction.editReply({
-                    embeds: [errorEmbed],
-                    components: [],
-                    files: [],
-                });
+            await callback({
+                embeds: [errorEmbed],
+                components: [],
+                files: [],
+            });
         } catch (replyError) {
             console.error("Failed to send error message:", replyError);
         }
     }
-}
-
-/**
- * Get emoji for species
- */
-function getSpeciesEmoji(species: string): string {
-    const emojiMap: Record<string, string> = {
-        human: "👤",
-        elf: "🧝",
-        dwarf: "⚒️",
-        cat: "🐱",
-        dog: "🐕",
-        wolf: "🐺",
-        dragon: "🐉",
-        bird: "🦅",
-        fish: "🐟",
-        robot: "🤖",
-        alien: "👽",
-    };
-    return emojiMap[species] || "✨";
-}
+} as Handler<ChatInputCommandInteraction | ButtonInteraction>);
